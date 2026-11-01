@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int            @id @default(autoincrement())
+  name            String
+  email           String         @unique
+  password        String?
+  avatar          String?        @db.Text
+  minutes_balance Int            @default(10) // 10 free minutes on signup
+  credits         Int            @default(5000)
+  isAdmin         Boolean        @default(false)
+  role            String         @default("USER") // USER or ADMIN
+  payments        Payment[]
+  subtitles       Subtitle[]
+  videos          VideoProject[]
+  createdAt       DateTime       @default(now())
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  planName        String   @default("PLUS") // LITE, PLUS, PRO, MAX
+  amountEtb       Decimal
+  transactionRef  String   @unique
+  paymentMethod   String   @default("TELEBIRR") // TELEBIRR, CBE_BIRR, CHAPA, MANUAL
+  chapaReference  String?
+  screenshotPath  String?  @db.Text
+  status          String   @default("pending") // pending, approved, rejected
+  minutesCredited Int      @default(0)
+  creditsCredited Int      @default(0)
+  user            User     @relation(fields: [userId], references: [id])
+  createdAt       DateTime @default(now())
+}
+
+model VideoProject {
+  id              Int        @id @default(autoincrement())
+  userId          Int
+  title           String
+  videoUrl        String?
+  durationSec     Float      @default(0)
+  status          String     @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED
+  rejectionReason String?
+  subtitlesJson   Json?
+  user            User       @relation(fields: [userId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Subtitle {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  videoTitle  String
+  srtContent  Json     // Stores subtitle JSON segments
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model PaymentMethod {
+  id          Int      @id @default(autoincrement())
+  name        String
+  amharicName String?
+  account     String
+  holder      String
+  color       String?  @default("bg-emerald-600")
+  badge       String?  @default("Active")
+  instruction String?  @db.Text
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -1,0 +1,564 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Custom xs breakpoint for very small phones (< 475px) */
+@custom-variant xs (@media (min-width: 475px));
+
+:root {
+  --background: #F3F5F6;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-border: rgba(37, 110, 150, 0.2);
+  --color-canvas: #F3F5F6;
+  --color-primary: #0062FF;
+  --color-gold: #ECCC6E;
+  --color-plum: #632450;
+  --color-magenta: #A6056F;
+  --color-teal: #256E96;
+}
+
+.dark {
+  --background: #0B0F17;
+  --foreground: #F3F5F6;
+  --surface: #131924;
+  --surface-border: rgba(37, 110, 150, 0.35);
+  --color-canvas: #0B0F17;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background-color: #0062FF;
+  color: #ffffff;
+}
+
+.font-geez {
+  font-family: var(--font-noto-ethiopic), 'Noto Sans Ethiopic', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Custom Amharic Fonts from Font.et */
+@font-face {
+  font-family: 'Zemenay';
+  src: url('/fonts/zemenay.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bela Bereka';
+  src: url('/fonts/bela-bereka.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SurGraphics Black';
+  src: url('/fonts/surgraphics-black.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Loga Display';
+  src: url('/fonts/loga-display.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HH Lemd Mono';
+  src: url('/fonts/hh-lemd-mono.otf') format('opentype'),
+       url('/fonts/NotoSansEthiopic-Regular.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geez Digital';
+  src: url('/fonts/geez-digital.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Amhara Reduced';
+  src: url('/fonts/amhara-reduced.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Waldba Wookianos';
+  src: url('/fonts/waldba-wookianos.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Abyssinica SIL Connected';
+  src: url('/fonts/abyssinica-sil-connected.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ethiopic Lessan';
+  src: url('/fonts/ethiopic-lessan.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F5F6;
+}
+::-webkit-scrollbar-thumb {
+  background: #256E96;
+  opacity: 0.5;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0062FF;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(37, 110, 150, 0.15);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(37, 110, 150, 0.18);
+  box-shadow: 0 4px 20px -2px rgba(99, 36, 80, 0.05);
+}
+
+/* Ambient glow animations */
+@keyframes aurora {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(30px, -20px) rotate(15deg) scale(1.1);
+    opacity: 0.65;
+  }
+}
+
+.animate-aurora {
+  animation: aurora 14s ease-in-out infinite alternate;
+}
+
+/* Caption Animation Presets */
+@keyframes caption-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-caption-up-down {
+  animation: caption-bounce 1.6s ease-in-out infinite;
+}
+
+@keyframes caption-pop {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.7;
+  }
+  65% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-caption-pop {
+  animation: caption-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes caption-slide {
+  0% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-caption-slide {
+  animation: caption-slide 0.22s ease-out forwards;
+}
+
+@keyframes caption-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-caption-pulse {
+  animation: caption-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes caption-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.9));
+  }
+}
+
+.animate-caption-glow {
+  animation: caption-glow 1.5s ease-in-out infinite;
+}
+
+/* Word-by-Word Popup Keyframes (Kinetic Pop-in) */
+@keyframes word-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.55) translateY(16px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.18) translateY(-3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-word-pop {
+  animation: word-pop-in 0.34s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Word Select Karaoke Pulse Keyframes */
+@keyframes word-select-pulse {
+  0%, 100% {
+    transform: scale(1.1);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.7);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 28px rgba(250, 204, 21, 1);
+  }
+}
+
+.animate-word-select-active {
+  animation: word-select-pulse 0.9s ease-in-out infinite;
+}
+
+/* Safe Zone Overlay guide pattern */
+.safe-zone-overlay {
+  background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Infinite Brand Marquee Animations */
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-scroll-reverse {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 36s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover,
+.pause-on-hover:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+.animate-marquee-reverse {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-reverse 40s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-reverse:hover,
+.pause-on-hover:hover .animate-marquee-reverse {
+  animation-play-state: paused;
+}
+
+/* Gradient Shimmer on Heading */
+@keyframes text-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-shimmer 5s ease-in-out infinite;
+}
+
+/* Subtle pulse badge */
+@keyframes badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.2);
+    border-color: rgba(250, 204, 21, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(250, 204, 21, 0.5);
+    border-color: rgba(250, 204, 21, 0.6);
+  }
+}
+
+.animate-badge-glow {
+  animation: badge-glow 3s ease-in-out infinite;
+}
+
+/* Smooth mask for left and right edges */
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-reverse,
+  .animate-text-shimmer,
+  .animate-badge-glow {
+    animation: none !important;
+  }
+}
+
+/* Studio Caption & Word Animations */
+@keyframes caption-pop-in {
+  0% { transform: scale(0.75); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes caption-pop-out {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.8; }
+}
+@keyframes caption-bounce-in {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+@keyframes caption-zoom-in {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes caption-zoom-out {
+  0% { transform: scale(1.15); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes caption-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2.5deg); }
+  75% { transform: rotate(2.5deg); }
+}
+@keyframes caption-fade-in {
+  0% { opacity: 0.2; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes caption-slide-up {
+  0% { transform: translateY(14px); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes word-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+@keyframes word-white-flash {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.7); }
+}
+
+.anim-caption-pop-in { animation: caption-pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+.anim-caption-pop-out { animation: caption-pop-out 0.4s ease-out both; }
+.anim-caption-bounce-in { animation: caption-bounce-in 1.2s ease infinite; }
+.anim-caption-zoom-in { animation: caption-zoom-in 0.4s ease-out both; }
+.anim-caption-zoom-out { animation: caption-zoom-out 0.4s ease-out both; }
+.anim-caption-wiggle { animation: caption-wiggle 1.5s ease-in-out infinite; }
+.anim-caption-fade-in { animation: caption-fade-in 0.4s ease-out both; }
+.anim-caption-slide-up { animation: caption-slide-up 0.4s ease-out both; }
+.anim-word-pulse { animation: word-pulse 1.2s ease-in-out infinite; }
+.anim-word-flash { animation: word-white-flash 0.8s ease-in-out infinite; }
+
+/* Creator Preset Animations */
+@keyframes mrbeast-pop {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.18); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1.14); }
+}
+.anim-mrbeast-pop {
+  animation: mrbeast-pop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes hormozi-pop {
+  0% { transform: scale(0.88); }
+  60% { transform: scale(1.14); }
+  100% { transform: scale(1.08); }
+}
+.anim-hormozi-pop {
+  animation: hormozi-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Custom Scrollbar for Studio panels - scroll only on caption style */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(37, 110, 150, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 98, 255, 0.5);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 110, 150, 0.25) transparent;
+}
+
+/* ── Responsive / Mobile-first utilities ──────────────────────────────────── */
+
+/* Safe-area insets for notched iPhones & Android cutouts */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Fluid clamp typography helpers */
+.text-fluid-hero {
+  font-size: clamp(1.75rem, 6vw, 4.5rem);
+  line-height: 1.1;
+}
+.text-fluid-h2 {
+  font-size: clamp(1.5rem, 4.5vw, 3rem);
+  line-height: 1.15;
+}
+.text-fluid-h3 {
+  font-size: clamp(1.125rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+/* Prevent content overflow on tiny phones (< 360px) */
+@media (max-width: 359px) {
+  .max-w-7xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl,
+  .max-w-2xl {
+    max-width: 100% !important;
+  }
+}
+
+/* Touch target minimum (Apple HIG: 44px, Google: 48px) */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  [role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* Improve text legibility on small screens — prevent overflow without overriding Tailwind utilities */
+@media (max-width: 639px) {
+  h1, h2, h3 {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+  }
+}
+
+/* Studio & preview panel: ensure horizontal scroll doesn't break layout */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky navbar safe area compensation on iOS */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header.sticky {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* Ensure modals are fully visible on mobile (avoid keyboard overlap) */
+.fixed.inset-0 {
+  /* Allow the modal overlay to account for virtual keyboard on mobile */
+  overscroll-behavior: contain;
+}
