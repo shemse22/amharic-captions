@@ -236,11 +236,11 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
     <section id="pricing" className="py-20 px-4 max-w-7xl mx-auto">
       {/* Title & Ethiopian Local Payment Banner */}
       <div className="text-center max-w-3xl mx-auto mb-14 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0062FF]/10 dark:bg-[#0062FF]/20 border border-[#0062FF]/25 text-[#0062FF] dark:text-[#60a5fa] text-xs font-bold uppercase tracking-wider">
-          <Smartphone className="w-3.5 h-3.5 text-[#0062FF] dark:text-[#60a5fa]" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#14213D]/10 dark:bg-white/10 border border-[#14213D]/20 dark:border-white/20 text-[#14213D] dark:text-[#FFFFFF] text-xs font-bold uppercase tracking-wider">
+          <Smartphone className="w-3.5 h-3.5 text-[#FCA311]" />
           <span>Telebirr & CBE Birr Direct Payment</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#632450] dark:text-[#ECCC6E] tracking-tight">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#14213D] dark:text-[#FFFFFF] tracking-tight">
           Pricing Plans
         </h2>
         <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300">
@@ -262,12 +262,12 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
               key={plan.id}
               className={`relative rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 border bg-white dark:bg-[#131924] ${
                 isPopular
-                  ? 'border-2 border-[#A6056F] shadow-xl shadow-[#A6056F]/10 scale-[1.02] ring-2 ring-[#A6056F]/15'
-                  : 'border-[#256E96]/20 dark:border-[#256E96]/35 hover:border-[#0062FF]/40 shadow-xs hover:shadow-md'
+                  ? 'border-2 border-[#FCA311] shadow-xl shadow-[#FCA311]/15 scale-[1.02] ring-2 ring-[#FCA311]/20'
+                  : 'border-[#E5E5E5] dark:border-neutral-800 hover:border-[#14213D]/40 shadow-xs hover:shadow-md'
               }`}
             >
               {isPopular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#A6056F] text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-[#A6056F]/20">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#FCA311] text-[#000000] text-[11px] font-black uppercase tracking-wider shadow-lg shadow-[#FCA311]/20">
                   Most Popular
                 </div>
               )}
@@ -276,10 +276,10 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                 {/* Plan Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-xl font-black text-[#632450] dark:text-white">{plan.name}</h3>
-                    <p className={`text-xs font-bold ${isPopular ? 'text-[#A6056F] dark:text-pink-400' : 'text-[#0062FF] dark:text-[#60a5fa]'}`}>{plan.tag}</p>
+                    <h3 className="text-xl font-black text-[#14213D] dark:text-white">{plan.name}</h3>
+                    <p className={`text-xs font-bold ${isPopular ? 'text-[#FCA311]' : 'text-[#14213D] dark:text-[#FCA311]'}`}>{plan.tag}</p>
                   </div>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#F3F5F6] dark:bg-[#0B0F17] border border-[#256E96]/20 text-[#256E96] dark:text-neutral-300">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#E5E5E5]/60 dark:bg-white/5 border border-[#E5E5E5] dark:border-neutral-700 text-[#14213D] dark:text-neutral-300">
                     {plan.tagAmharic}
                   </span>
                 </div>
@@ -300,16 +300,16 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                 </p>
 
                 {/* Minutes & Credits Highlights */}
-                <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#F3F5F6] dark:bg-[#0B0F17] border border-[#256E96]/15 dark:border-[#256E96]/30 mb-6">
+                <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#E5E5E5]/40 dark:bg-[#0B0F17] border border-[#E5E5E5] dark:border-neutral-800 mb-6">
                   <div className="flex items-center gap-2.5 text-xs">
-                    <Clock className="w-4 h-4 text-[#ECCC6E] fill-[#ECCC6E] shrink-0" />
-                    <span className="font-bold text-[#632450] dark:text-[#ECCC6E]">
+                    <Clock className="w-4 h-4 text-[#FCA311] fill-[#FCA311] shrink-0" />
+                    <span className="font-bold text-[#14213D] dark:text-[#FFFFFF]">
                       {plan.minutes} minutes total video duration
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 text-xs">
-                    <Coins className="w-4 h-4 text-[#0062FF] fill-[#0062FF] shrink-0" />
-                    <span className="text-[#0062FF] dark:text-[#60a5fa] font-bold font-mono">
+                    <Coins className="w-4 h-4 text-[#FCA311] fill-[#FCA311] shrink-0" />
+                    <span className="text-[#14213D] dark:text-[#FCA311] font-bold font-mono">
                       {plan.credits.toLocaleString()} AI credits
                     </span>
                   </div>
@@ -319,23 +319,20 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                 <div className="space-y-2.5 mb-8">
                   {plan.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-600 dark:text-neutral-300">
-                      <Check className="w-3.5 h-3.5 text-[#0062FF] dark:text-[#60a5fa] mt-0.5 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-[#FCA311] mt-0.5 shrink-0" />
                       <span>{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Action Button: Navy Blue #14213D with text color white #FFFFFF */}
               <button
                 type="button"
                 onClick={() => handleSelectPlan(plan)}
-                className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md ${
-                  isPopular
-                    ? 'bg-gradient-to-r from-[#0062FF] to-[#A6056F] hover:from-[#0052d9] hover:to-[#8d045e] text-white shadow-[#0062FF]/20 active:scale-[0.98]'
-                    : 'bg-[#0062FF] hover:bg-[#0052d9] text-white active:scale-[0.98]'
-                }`}
+                className="w-full py-3.5 px-4 rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] shadow-[#14213D]/20 active:scale-[0.98] cursor-pointer"
               >
-                <Smartphone className="w-4 h-4" />
+                <Smartphone className="w-4 h-4 text-[#FCA311]" />
                 <span>{plan.buttonLabel}</span>
               </button>
             </div>
@@ -345,10 +342,10 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
 
       <section
         aria-labelledby="plan-upgrades-heading"
-        className="mt-12 rounded-3xl border border-[#A6056F]/20 bg-[#A6056F]/5 p-5 sm:p-7 dark:bg-[#A6056F]/10"
+        className="mt-12 rounded-3xl border border-[#E5E5E5] dark:border-neutral-800 bg-[#E5E5E5]/20 p-5 sm:p-7 dark:bg-white/5"
       >
         <div className="mb-5">
-          <h3 id="plan-upgrades-heading" className="text-xl font-black text-[#632450] dark:text-white">
+          <h3 id="plan-upgrades-heading" className="text-xl font-black text-[#14213D] dark:text-white">
             Compare your upgrade options
           </h3>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
@@ -361,9 +358,9 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
             return (
               <div
                 key={`${previousPlan.id}-${plan.id}`}
-                className="rounded-2xl border border-[#256E96]/15 bg-white p-4 dark:border-[#256E96]/30 dark:bg-[#131924]"
+                className="rounded-2xl border border-[#E5E5E5] bg-white p-4 dark:border-neutral-800 dark:bg-[#131924]"
               >
-                <p className="text-sm font-black text-[#632450] dark:text-[#ECCC6E]">
+                <p className="text-sm font-black text-[#14213D] dark:text-[#FCA311]">
                   {previousPlan.name} <span aria-hidden="true">→</span> {plan.name}
                 </p>
                 <p className="mt-2 text-sm font-bold text-neutral-800 dark:text-neutral-100">
@@ -384,10 +381,10 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
 
       <section
         aria-labelledby="payment-details-heading"
-        className="mt-8 rounded-3xl border border-[#256E96]/20 bg-white p-5 sm:p-7 dark:border-[#256E96]/35 dark:bg-[#131924]"
+        className="mt-8 rounded-3xl border border-[#E5E5E5] bg-white p-5 sm:p-7 dark:border-neutral-800 dark:bg-[#131924]"
       >
         <div className="mb-5">
-          <h3 id="payment-details-heading" className="text-xl font-black text-[#632450] dark:text-white">
+          <h3 id="payment-details-heading" className="text-xl font-black text-[#14213D] dark:text-white">
             Clear local payment steps
           </h3>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
@@ -395,16 +392,16 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
           </p>
         </div>
         <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <li className="rounded-2xl bg-[#F3F5F6] p-4 dark:bg-[#0B0F17]">
-            <span className="font-black text-[#A6056F]">1.</span>{' '}
+          <li className="rounded-2xl bg-[#E5E5E5]/40 p-4 dark:bg-[#0B0F17]">
+            <span className="font-black text-[#FCA311]">1.</span>{' '}
             Send the exact plan amount to one of the listed Telebirr or bank accounts.
           </li>
-          <li className="rounded-2xl bg-[#F3F5F6] p-4 dark:bg-[#0B0F17]">
-            <span className="font-black text-[#A6056F]">2.</span>{' '}
+          <li className="rounded-2xl bg-[#E5E5E5]/40 p-4 dark:bg-[#0B0F17]">
+            <span className="font-black text-[#FCA311]">2.</span>{' '}
             Submit your payment receipt screenshot for verification.
           </li>
-          <li className="rounded-2xl bg-[#F3F5F6] p-4 dark:bg-[#0B0F17]">
-            <span className="font-black text-[#A6056F]">3.</span>{' '}
+          <li className="rounded-2xl bg-[#E5E5E5]/40 p-4 dark:bg-[#0B0F17]">
+            <span className="font-black text-[#FCA311]">3.</span>{' '}
             Minutes and credits are added after the payment is verified by the Bgern team.
           </li>
         </ol>
@@ -416,7 +413,7 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
             href="https://t.me/bgern_supportbot"
             target="_blank"
             rel="noreferrer"
-            className="font-bold text-[#0062FF] underline dark:text-[#60a5fa]"
+            className="font-bold text-[#14213D] underline dark:text-[#FCA311]"
           >
             Bgern support
           </a>{' '}
@@ -427,21 +424,21 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
       {/* Direct Payment Modal */}
       {selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-lg bg-white dark:bg-[#131924] border border-[#256E96]/20 dark:border-[#256E96]/35 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl text-neutral-900 dark:text-[#F3F5F6] max-h-[90dvh] overflow-y-auto pb-[env(safe-area-inset-bottom,0px)]">
+          <div className="relative w-full max-w-lg bg-white dark:bg-[#131924] border border-[#E5E5E5] dark:border-neutral-800 rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl text-neutral-900 dark:text-[#F3F5F6] max-h-[90dvh] overflow-y-auto pb-[env(safe-area-inset-bottom,0px)]">
             <button
                 onClick={closePaymentModal}
-              className="absolute top-5 right-5 p-2 text-neutral-400 hover:text-neutral-700 dark:hover:text-white rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
+              className="absolute top-5 right-5 p-2 text-neutral-400 hover:text-[#14213D] dark:hover:text-white rounded-lg hover:bg-[#E5E5E5]/50 dark:hover:bg-white/10 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Modal Header */}
             <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0062FF]/10 dark:bg-[#0062FF]/20 border border-[#0062FF]/25 text-[#0062FF] dark:text-[#60a5fa] text-xs font-bold uppercase mb-2">
-                <Zap className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#14213D]/10 dark:bg-white/10 border border-[#14213D]/20 text-[#14213D] dark:text-[#FFFFFF] text-xs font-bold uppercase mb-2">
+                <Zap className="w-3.5 h-3.5 text-[#FCA311]" />
                 <span>{selectedPlan.name} Plan • {selectedPlan.minutes} Min</span>
               </div>
-              <h3 className="text-2xl font-black text-[#632450] dark:text-[#ECCC6E]">
+              <h3 className="text-2xl font-black text-[#14213D] dark:text-[#FFFFFF]">
                 Pay {selectedPlan.priceEtb} ETB (በቴሌብር ይክፈሉ)
               </h3>
               <p className="text-xs text-neutral-600 dark:text-neutral-300 mt-1">
@@ -451,25 +448,25 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
 
             {/* Official Payment Accounts */}
             <div className="space-y-4">
-              <div className="text-xs font-bold text-[#256E96] dark:text-[#ECCC6E] flex items-center justify-between">
+              <div className="text-xs font-bold text-[#14213D] dark:text-[#FFFFFF] flex items-center justify-between">
                 <span>ኦፊሴላዊ የክፍያ ቁጥሮች (Official Accounts):</span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">100% ፈጣንና አስተማማኝ</span>
+                <span className="text-[10px] text-[#FCA311] font-bold">100% ፈጣንና አስተማማኝ</span>
               </div>
 
               <div className="space-y-2.5">
                 {paymentAccounts.map((acc) => (
                   <div
                     key={acc.name}
-                    className="p-3.5 rounded-2xl bg-[#F3F5F6] dark:bg-[#0B0F17] border border-[#256E96]/20 dark:border-[#256E96]/35 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-2xl bg-[#E5E5E5]/40 dark:bg-[#0B0F17] border border-[#E5E5E5] dark:border-neutral-800 flex items-center justify-between text-xs"
                   >
                     <div className="space-y-0.5">
                       <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                         <span>{acc.name}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-[#131924] border border-[#256E96]/20 text-[#256E96] dark:text-neutral-300">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-[#131924] border border-[#E5E5E5] dark:border-neutral-700 text-[#14213D] dark:text-neutral-300">
                           {acc.badge}
                         </span>
                       </div>
-                      <div className="font-mono text-[#0062FF] dark:text-[#ECCC6E] font-bold text-sm tracking-wider select-all">
+                      <div className="font-mono text-[#14213D] dark:text-[#FCA311] font-bold text-sm tracking-wider select-all">
                         {acc.account}
                       </div>
                       <div className="text-[11px] text-neutral-500 dark:text-neutral-400">ስም (Name): {acc.holder}</div>
@@ -478,16 +475,16 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                     <button
                       type="button"
                       onClick={() => copyToClipboard(acc.account, acc.name)}
-                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#131924] hover:bg-[#0062FF] hover:text-white dark:hover:bg-[#0062FF] border border-[#256E96]/20 text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
                     >
                       {copiedAccount === acc.name ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <Check className="w-3.5 h-3.5 text-[#FCA311]" />
                           <span>Copied</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="w-3.5 h-3.5 text-white" />
                           <span>Copy</span>
                         </>
                       )}
@@ -501,10 +498,10 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-black text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                      <ImageIcon className="w-4 h-4 text-[#0062FF]" />
+                      <ImageIcon className="w-4 h-4 text-[#FCA311]" />
                       <span>የክፍያ ደረሰኝ ፎቶ / ስክሪንሾት (Receipt Screenshot):</span>
                     </label>
-                    <span className="text-[10px] font-bold text-[#0062FF]">አስገዳጅ (Required)</span>
+                    <span className="text-[10px] font-bold text-[#14213D] dark:text-[#FCA311]">አስገዳጅ (Required)</span>
                   </div>
 
                   <input
@@ -516,7 +513,7 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                   />
 
                   {screenshotPreview ? (
-                    <div className="p-3 rounded-2xl bg-[#F3F5F6] dark:bg-[#0B0F17] border border-[#0062FF]/40 flex items-center justify-between gap-3 shadow-xs">
+                    <div className="p-3 rounded-2xl bg-[#E5E5E5]/40 dark:bg-[#0B0F17] border border-[#14213D]/40 flex items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-3 min-w-0">
                         <Image
                           src={screenshotPreview}
@@ -524,7 +521,7 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                           width={56}
                           height={56}
                           unoptimized
-                          className="w-14 h-14 object-cover rounded-xl border border-[#256E96]/30 shrink-0"
+                          className="w-14 h-14 object-cover rounded-xl border border-[#E5E5E5] shrink-0"
                         />
                         <div className="min-w-0">
                           <div className="text-xs font-bold truncate text-neutral-900 dark:text-white">
@@ -549,7 +546,7 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                               type="button"
                               onClick={() => screenshotFile && void uploadReceipt(screenshotFile)}
                               disabled={isUploadingScreenshot}
-                              className="mt-1 text-[11px] font-bold text-[#0062FF] hover:underline disabled:opacity-50"
+                              className="mt-1 text-[11px] font-bold text-[#14213D] dark:text-[#FCA311] hover:underline disabled:opacity-50 cursor-pointer"
                             >
                               Retry upload
                             </button>
@@ -569,13 +566,13 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                     <button
                       type="button"
                       onClick={() => receiptFileRef.current?.click()}
-                      className="w-full py-5 px-4 rounded-2xl border-2 border-dashed border-[#0062FF]/40 hover:border-[#0062FF] bg-[#0062FF]/5 hover:bg-[#0062FF]/10 flex flex-col items-center justify-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200 transition-all cursor-pointer group"
+                      className="w-full py-5 px-4 rounded-2xl border-2 border-dashed border-[#14213D]/30 hover:border-[#14213D] bg-[#14213D]/5 hover:bg-[#14213D]/10 flex flex-col items-center justify-center gap-2 text-xs font-semibold text-neutral-700 dark:text-neutral-200 transition-all cursor-pointer group"
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#0062FF]/15 group-hover:scale-110 flex items-center justify-center transition-transform">
-                        <UploadCloud className="w-5 h-5 text-[#0062FF]" />
+                      <div className="w-10 h-10 rounded-full bg-[#14213D]/10 group-hover:scale-110 flex items-center justify-center transition-transform">
+                        <UploadCloud className="w-5 h-5 text-[#FCA311]" />
                       </div>
                       <div className="text-center">
-                        <span className="font-bold text-[#0062FF]">የቴሌብር ስክሪንሾት እዚህ ይጫኑ</span>
+                        <span className="font-bold text-[#14213D] dark:text-[#FFFFFF]">የቴሌብር ስክሪንሾት እዚህ ይጫኑ</span>
                         <span className="block text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
                           Tap to select photo from your phone or gallery
                         </span>
@@ -587,16 +584,16 @@ export default function PricingSection({ currentUser, onRequireLogin }: PricingS
                 <button
                   type="submit"
                   disabled={isSubmitting || isUploadingScreenshot || (!screenshotFile && !uploadedUrl)}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#0062FF] to-[#A6056F] hover:from-[#0052d9] hover:to-[#8d045e] text-white font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#0062FF]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] font-black text-xs uppercase tracking-wider transition-all shadow-xl shadow-[#14213D]/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
                       <span>እየተላከ ነው (Submitting)...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-4 h-4 text-[#FCA311]" />
                       <span>ክፍያውን ላክ • Submit Payment ({selectedPlan.priceEtb} ETB)</span>
                     </>
                   )}

@@ -69,9 +69,9 @@ export default function Footer() {
                 href="https://t.me/bgern_supportbot"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#0062FF] text-white text-xs font-semibold hover:bg-[#0052d9] transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#14213D] text-[#FFFFFF] text-xs font-semibold hover:bg-[#000000] transition-colors shadow-sm"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 text-[#FCA311]" />
                 Join Bgern Telegram Community
               </a>
             </div>

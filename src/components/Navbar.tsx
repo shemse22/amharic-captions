@@ -15,7 +15,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import AuthModal from './AuthModal';
+import AuthModal, { AuthUser } from './AuthModal';
 import { useTheme } from './ThemeProvider';
 import NotificationBell from './NotificationBell';
 import PaymentApprovalModal from './PaymentApprovalModal';
@@ -24,7 +24,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const [currentUser, setCurrentUser] = useState<any>(() => {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('bgern_user');
@@ -69,7 +69,7 @@ export default function Navbar() {
     return () => window.removeEventListener('bgern_auth_change', syncAuth);
   }, [pathname]);
 
-  const getGmailAvatarUrl = (user: any) => {
+  const getGmailAvatarUrl = (user: { email?: string; name?: string } | null) => {
     if (!user || !user.email) return '';
     const cleanEmail = user.email.trim().toLowerCase();
     return `https://unavatar.io/google/${encodeURIComponent(cleanEmail)}?fallback=https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3D${encodeURIComponent(user.name || cleanEmail.split('@')[0])}%26background%3D0062FF%26color%3Dfff%26size%3D256%26bold%3Dtrue`;
@@ -198,12 +198,8 @@ export default function Navbar() {
 
                       <Link
                         href="/pricing"
-                        className={`px-2.5 py-1.5 rounded-xl border text-xs font-black transition-all hover:scale-105 whitespace-nowrap shrink-0 ${
-                          is70PercentUsed
-                            ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/60 text-amber-600 dark:text-amber-400 animate-pulse'
-                            : 'bg-[#0062FF]/10 hover:bg-[#0062FF]/20 border-[#0062FF]/30 text-[#0062FF]'
-                        }`}
-                        title={is70PercentUsed ? '⚠️ ከክሬዲትዎ 70% በላይ ተጠቅመዋል! አሁን ደቂቃ ይሙሉ' : 'Top up minutes via Telebirr or CBE Birr'}
+                        className="px-2.5 py-1.5 rounded-xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] text-xs font-black transition-all hover:scale-105 whitespace-nowrap shrink-0 shadow-xs"
+                        title="Top up minutes via Telebirr or CBE Birr"
                       >
                         + ደቂቃ ጨምር
                       </Link>
@@ -256,9 +252,9 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0062FF] to-[#A6056F] hover:from-[#0052d9] hover:to-[#8d045e] text-white font-bold text-xs transition-all shadow-md shadow-[#0062FF]/20 active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] font-bold text-xs transition-all shadow-md shadow-[#14213D]/20 active:scale-95 cursor-pointer"
               >
-                <User className="w-3.5 h-3.5 shrink-0" />
+                <User className="w-3.5 h-3.5 text-[#FCA311] shrink-0" />
                 <span>Sign in <span className="hidden xs:inline">with Gmail</span></span>
               </button>
             )}
@@ -363,9 +359,9 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     setShowAuthModal(true);
                   }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#0062FF] to-[#A6056F] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4 text-[#FCA311]" />
                   <span>Sign in with Gmail (ግባ)</span>
                 </button>
               </div>

@@ -1,0 +1,7 @@
+{
+    "env": {
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:31415",
+        "ANTHROPIC_AUTH_TOKEN": "freellmapi-0cbed0e1fd8bfc2aef05246eb357d565d759e0a5ce46a367",
+        "ANTHROPIC_MODEL": "bgern_free_roken"
+    }
+}

@@ -30,13 +30,16 @@ async function handlePost(
 
   try {
     // 1. REGISTER
-    // 1. REGISTER
     if (subAction === 'register') {
       const body = await request.json();
       const { email, password, name } = body;
 
       if (!email || !name) {
-        return NextResponse.json({ error: 'Email address and Name are required' }, { status: 400 });
+        return NextResponse.json({ error: 'Email address and User Name are required.' }, { status: 400 });
+      }
+
+      if (!password || typeof password !== 'string' || password.length < 6) {
+        return NextResponse.json({ error: 'Password must be at least 6 characters long.' }, { status: 400 });
       }
 
       const cleanEmail = email.trim().toLowerCase();
@@ -60,7 +63,7 @@ async function handlePost(
         return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 400 });
       }
 
-      const hashedPassword = password ? await hashPassword(password) : undefined;
+      const hashedPassword = await hashPassword(password);
       const isAdmin = cleanEmail === ALLOWED_ADMIN_EMAIL.toLowerCase();
       const gmailAvatar = `https://unavatar.io/google/${encodeURIComponent(cleanEmail)}?fallback=https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3D${encodeURIComponent(name.trim())}%26background%3D0062FF%26color%3Dfff%26size%3D256%26bold%3Dtrue`;
       const user = await dbService.createUser({
@@ -69,12 +72,14 @@ async function handlePost(
         password: hashedPassword,
         avatar: gmailAvatar,
         role: isAdmin ? 'ADMIN' : 'USER',
-        minutes_balance: isAdmin ? 999 : 0,
-        credits: isAdmin ? 999999 : 0,
+        minutes_balance: isAdmin ? 999 : 10,
+        credits: isAdmin ? 999999 : 5000,
       });
 
       const token = createAuthToken(user);
-      const res = NextResponse.json({ user, success: true });
+      const publicUser = { ...user };
+      delete publicUser.password;
+      const res = NextResponse.json({ user: publicUser, success: true });
       res.cookies.set(AUTH_COOKIE, token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -90,8 +95,8 @@ async function handlePost(
       const body = await request.json();
       const { email, password } = body;
 
-      if (!email) {
-        return NextResponse.json({ error: 'Email address is required' }, { status: 400 });
+      if (!email || !password) {
+        return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
       }
 
       const cleanEmail = email.trim().toLowerCase();
@@ -129,30 +134,26 @@ async function handlePost(
         return response;
       }
 
-      let user = await dbService.findUserByEmail(cleanEmail);
+      const user = await dbService.findUserByEmail(cleanEmail);
       if (!user) {
-        // Auto-create for friendly quick start
-        const isAdmin = cleanEmail === ALLOWED_ADMIN_EMAIL.toLowerCase();
-        const gmailAvatar = `https://unavatar.io/google/${encodeURIComponent(cleanEmail)}?fallback=https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3D${encodeURIComponent(cleanEmail.split('@')[0])}%26background%3D0062FF%26color%3Dfff%26size%3D256%26bold%3Dtrue`;
-        user = await dbService.createUser({
-          email: cleanEmail,
-          name: cleanEmail.split('@')[0],
-          password: password ? await hashPassword(password) : undefined,
-          avatar: gmailAvatar,
-          role: isAdmin ? 'ADMIN' : 'USER',
-          minutes_balance: isAdmin ? 999 : 0,
-          credits: isAdmin ? 999999 : 0,
-        });
-      } else if (password && user.password && !user.password.startsWith('GMAIL_')) {
+        return NextResponse.json({ error: 'No account found with this email. Please create an account.' }, { status: 404 });
+      }
+
+      if (user.password && !user.password.startsWith('GMAIL_')) {
         const matches = await comparePassword(password, user.password);
         if (!matches && user.password !== password) {
-          return NextResponse.json({ error: 'Invalid password. Please try again.' }, { status: 401 });
+          return NextResponse.json({ error: 'Incorrect password. Please try again.' }, { status: 401 });
         }
+      } else if (!user.password || user.password.startsWith('GMAIL_')) {
+        return NextResponse.json(
+          { error: 'This account was registered with Google. Please use "Continue with Google" above.' },
+          { status: 400 }
+        );
       }
 
       const token = createAuthToken(user);
       const responseUser = { ...user };
-      if (email === ALLOWED_ADMIN_EMAIL.toLowerCase()) delete responseUser.password;
+      delete responseUser.password;
       const res = NextResponse.json({ user: responseUser, success: true });
       res.cookies.set(AUTH_COOKIE, token, {
         httpOnly: true,
@@ -222,8 +223,8 @@ async function handlePost(
           password: generatedAdminPassword,
           avatar: gmailAvatar,
           role: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
-          minutes_balance: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999 : 0,
-          credits: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999999 : 0,
+          minutes_balance: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999 : 10,
+          credits: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999999 : 5000,
         });
       } else if (!user.avatar) {
         user.avatar = gmailAvatar;
