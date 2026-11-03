@@ -73,7 +73,7 @@ async function handlePost(
         avatar: gmailAvatar,
         role: isAdmin ? 'ADMIN' : 'USER',
         minutes_balance: isAdmin ? 999 : 10,
-        credits: isAdmin ? 999999 : 5000,
+        credits: isAdmin ? 999999 : 300000,
       });
 
       const token = createAuthToken(user);
@@ -224,7 +224,7 @@ async function handlePost(
           avatar: gmailAvatar,
           role: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 'ADMIN' : 'USER',
           minutes_balance: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999 : 10,
-          credits: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999999 : 5000,
+          credits: email === ALLOWED_ADMIN_EMAIL.toLowerCase() ? 999999 : 300000,
         });
       } else if (!user.avatar) {
         user.avatar = gmailAvatar;

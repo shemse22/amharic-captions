@@ -27,18 +27,18 @@
       "name": "Solomon Tekle (YouTuber)",
       "email": "solomon.t@gmail.com",
       "minutes_balance": 48,
-      "credits": 270000,
+      "credits": 1440000,
       "isAdmin": false,
       "role": "USER",
       "createdAt": "2026-09-09T22:21:24.908Z",
-      "total_credits_granted": 270000
+      "total_credits_granted": 1440000
     },
     {
       "id": 4,
       "name": "Selamawit D. (TikToker)",
       "email": "selam.video@gmail.com",
       "minutes_balance": 8,
-      "credits": 45000,
+      "credits": 240000,
       "isAdmin": false,
       "role": "USER",
       "createdAt": "2026-09-13T22:21:24.908Z"

@@ -17,7 +17,11 @@ interface ApprovalNotif {
   };
 }
 
-export default function PaymentApprovalModal({ currentUser }: { currentUser?: any }) {
+export default function PaymentApprovalModal({
+  currentUser,
+}: {
+  currentUser?: { id?: number; email?: string } | null;
+}) {
   const currentUserId = currentUser?.id;
   const currentUserEmail = currentUser?.email;
   const [approvalNotif, setApprovalNotif] = useState<ApprovalNotif | null>(null);
@@ -173,7 +177,7 @@ export default function PaymentApprovalModal({ currentUser }: { currentUser?: an
             <div>
               <span className="text-[10px] text-neutral-500 uppercase font-bold block">የተጨመረ ክሬዲት</span>
               <span className="text-sm font-black text-[#0062FF]">
-                +{(data.creditsCredited || (data.minutesCredited || 14) * 6000).toLocaleString()} Cr
+                +{(data.creditsCredited || (data.minutesCredited || 14) * 30000).toLocaleString()} Cr
               </span>
             </div>
           </div>

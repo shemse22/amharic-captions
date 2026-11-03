@@ -568,7 +568,7 @@ export const dbService = {
             email: user.email,
             password: user.password,
             minutes_balance: user.minutes_balance || 10,
-            credits: user.credits || 5000,
+            credits: user.credits || 300000,
             isAdmin: user.isAdmin,
             role: user.role,
             createdAt: user.createdAt?.toISOString?.() || new Date().toISOString(),
@@ -594,7 +594,7 @@ export const dbService = {
             name: user.name,
             email: user.email,
             minutes_balance: user.minutes_balance || 10,
-            credits: user.credits || 5000,
+            credits: user.credits || 300000,
             isAdmin: user.isAdmin,
             role: user.role,
             createdAt: user.createdAt?.toISOString?.() || new Date().toISOString(),
@@ -695,7 +695,7 @@ export const dbService = {
             email: updated.email,
             avatar: updated.avatar || data.avatar,
             minutes_balance: updated.minutes_balance || 10,
-            credits: updated.credits || 5000,
+            credits: updated.credits || 300000,
             isAdmin: updated.isAdmin,
             role: updated.role,
             createdAt: updated.createdAt?.toISOString?.() || new Date().toISOString(),
@@ -970,7 +970,7 @@ export const dbService = {
             screenshotPath: row.screenshotPath || undefined,
             status: row.status as any,
             minutesCredited: row.minutesCredited,
-            creditsCredited: row.creditsCredited || row.minutesCredited * 6000,
+            creditsCredited: row.creditsCredited || row.minutesCredited * 30000,
             createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
           }));
         }
@@ -1006,7 +1006,7 @@ export const dbService = {
             screenshotPath: row.screenshotPath || undefined,
             status: row.status as any,
             minutesCredited: row.minutesCredited,
-            creditsCredited: row.creditsCredited || row.minutesCredited * 6000,
+            creditsCredited: row.creditsCredited || row.minutesCredited * 30000,
             createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
           };
         }
@@ -1155,7 +1155,7 @@ export const dbService = {
             data: {
               minutes_balance: { increment: pending.minutesCredited },
               credits: {
-                increment: pending.creditsCredited || pending.minutesCredited * 6000,
+                increment: pending.creditsCredited || pending.minutesCredited * 30000,
               },
             },
           });
@@ -1181,7 +1181,7 @@ export const dbService = {
         screenshotPath: updated.screenshotPath || undefined,
         status: updated.status as any,
         minutesCredited: updated.minutesCredited,
-        creditsCredited: updated.creditsCredited || updated.minutesCredited * 6000,
+        creditsCredited: updated.creditsCredited || updated.minutesCredited * 30000,
         createdAt: updated.createdAt?.toISOString?.() || new Date().toISOString(),
       };
     }
@@ -1343,7 +1343,7 @@ export const dbService = {
     );
     const paymentCredits = approvedPayments.reduce(
       (sum, p) =>
-        sum + (p.creditsCredited || (p.minutesCredited ? p.minutesCredited * 6000 : 0)),
+        sum + (p.creditsCredited || (p.minutesCredited ? p.minutesCredited * 30000 : 0)),
       0
     );
     return Math.max(user.credits, user.total_credits_granted || 0, paymentCredits);

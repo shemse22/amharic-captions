@@ -22,7 +22,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     amharicName: 'Lite',
     priceEtb: 50,
     minutes: 5,
-    credits: 30000,
+    credits: 150000,
     tag: 'Try Bgern',
     tagAmharic: 'Trial',
     description: 'Try Bgern with your first Amharic caption projects.',
@@ -39,7 +39,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     amharicName: 'Plus',
     priceEtb: 150,
     minutes: 14,
-    credits: 90000,
+    credits: 420000,
     tag: 'Create More',
     tagAmharic: 'Popular',
     description: 'Recommended for regular creators who publish more often.',
@@ -57,7 +57,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     amharicName: 'Pro',
     priceEtb: 350,
     minutes: 40,
-    credits: 250000,
+    credits: 1200000,
     tag: 'Create Consistently',
     tagAmharic: 'Best Value',
     description: 'For creators who publish consistently and want a lower cost per video minute.',
@@ -74,7 +74,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     amharicName: 'Agency',
     priceEtb: 750,
     minutes: 100,
-    credits: 650000,
+    credits: 3000000,
     tag: 'Scale Your Production',
     tagAmharic: 'Agency',
     description: 'A high-volume option for agencies and teams producing content at scale.',
@@ -145,7 +145,7 @@ export function calculateUsageDeduction(durationSeconds: number): {
   creditsToDeduct: number;
 } {
   const durationMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
-  const credits = durationMinutes * 6000;
+  const credits = durationMinutes * 30000;
   return {
     minutesToDeduct: durationMinutes,
     creditsToDeduct: credits,
