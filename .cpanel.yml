@@ -1,0 +1,13 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/bgerncxv/bgern/
+    - /bin/cp -a .next $DEPLOYPATH
+    - /bin/cp -a public $DEPLOYPATH
+    - /bin/cp -a src $DEPLOYPATH
+    - /bin/cp -a prisma $DEPLOYPATH
+    - /bin/cp -f server.js $DEPLOYPATH
+    - /bin/cp -f package.json $DEPLOYPATH
+    - /bin/cp -f package-lock.json $DEPLOYPATH
+    - /bin/cp -f next.config.ts $DEPLOYPATH
+    - /bin/cp -f tsconfig.json $DEPLOYPATH
