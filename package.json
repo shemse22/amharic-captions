@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:export": "node --test --import tsx tests/server-export.test.ts tests/export-pipeline.test.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma generate || exit 0"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
