@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/convert-to-mp4": {
+      "maxDuration": 300
+    },
+    "/api/export": {
+      "maxDuration": 300
+    },
+    "/api/export/diagnose": {},
+    "/api/exports/[filename]": {},
+    "/api/repair-video": {
+      "maxDuration": 300
+    },
+    "/api/repair-video/cfr": {
+      "maxDuration": 180
+    },
+    "/api/repair-video/process": {
+      "maxDuration": 180
+    },
+    "/api/transcribe": {
+      "maxDuration": 300
+    }
+  }
+}

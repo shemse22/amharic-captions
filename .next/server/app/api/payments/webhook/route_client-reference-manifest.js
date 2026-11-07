@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/payments/webhook/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Users\\hp\\Desktop\\amharic-captions\\src\\app\\api\\payments\\webhook\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

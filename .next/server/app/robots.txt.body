@@ -1,0 +1,25 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /shems/
+
+User-Agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /shems/
+
+User-Agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /shems/
+
+User-Agent: Applebot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /shems/
+
+Sitemap: https://bgern.com/sitemap.xml

@@ -1,0 +1,29 @@
+{
+  "status": 307,
+  "headers": {
+    "location": "/tools/tiktok-generator",
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/tiktok-generator/layout,_N_T_/tiktok-generator/page,_N_T_/tiktok-generator"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/_index",
+    "/tiktok-generator/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 0,
+    "slots": {
+      "children": {
+        "hints": 64,
+        "slots": {
+          "children": {
+            "hints": 160,
+            "slots": null
+          }
+        }
+      }
+    }
+  }
+}

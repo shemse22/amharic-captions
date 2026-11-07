@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/payment-methods/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Users\\hp\\Desktop\\amharic-captions\\src\\app\\api\\payment-methods\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};
