@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+.next/cache
+*.tar.gz
+*.zip
+tests
+.vscode
+.agents
