@@ -12,7 +12,7 @@ import { getLocalTempFilePath } from "@/lib/temp-dir";
 
 const execFileAsync = promisify(execFile);
 
-export const maxDuration = 300; // Allow up to 5 minutes for speech recognition
+export const maxDuration = 600; // Allow up to 10 minutes for speech recognition
 export const dynamic = "force-dynamic";
 
 type CaptionSegment = {
@@ -220,9 +220,9 @@ function uploadBufferToS3(s3Url: string, buffer: Buffer, contentType: string): P
     const timer = setTimeout(() => {
       if (isDone) return;
       isDone = true;
-      try { req.destroy(new Error("S3 upload timed out after 60 seconds")); } catch {}
-      reject(new Error("S3 upload timed out after 60 seconds"));
-    }, 60000);
+      try { req.destroy(new Error("S3 upload timed out after 180 seconds")); } catch {}
+      reject(new Error("S3 upload timed out after 180 seconds"));
+    }, 180000);
 
     req.on("error", (err) => {
       if (isDone) return;
@@ -469,7 +469,7 @@ async function transcribeWithHasab(
       Authorization: `Bearer ${apiKey}`,
     },
     body: form,
-    signal: AbortSignal.timeout(45000),
+    signal: AbortSignal.timeout(120000),
   });
 
   const submitData = await submitRes.json().catch(() => ({}));
@@ -508,18 +508,18 @@ async function transcribeWithHasab(
 
   let completedItem: any = null;
   const startTime = Date.now();
-  const maxWaitMs = 180000; // Allow up to 3 minutes for Hasab processing
+  const maxWaitMs = 300000; // Allow up to 5 minutes for Hasab processing
   let pollIteration = 0;
 
   while (Date.now() - startTime < maxWaitMs) {
     pollIteration++;
-    // First poll after 1s, subsequent after 1.5s
-    await new Promise((r) => setTimeout(r, pollIteration === 1 ? 1000 : 1500));
+    // First poll after 2s, subsequent polls at 3s intervals to avoid hammering
+    await new Promise((r) => setTimeout(r, pollIteration === 1 ? 2000 : 3000));
 
     try {
       const itemRes = await fetch(`https://api.hasab.ai/api/v1/audios/${encodeURIComponent(String(audioId))}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(30000),
       });
       if (!itemRes.ok) {
         throw new Error(`Hasab transcription status check failed: HTTP ${itemRes.status}`);
@@ -629,7 +629,7 @@ Guidelines:
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(180000),
       });
 
       if (!response.ok) {
