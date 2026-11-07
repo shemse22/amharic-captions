@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint",
     "test:export": "node --test --import tsx tests/server-export.test.ts tests/export-pipeline.test.ts",
     "postinstall": "prisma generate || exit 0"
@@ -15,6 +15,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@prisma/client": "^5.22.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/fluent-ffmpeg": "^2.1.28",
     "bcryptjs": "^3.0.3",
@@ -28,7 +29,6 @@
     "next": "^16.3.5",
     "nodemailer": "^10.0.13",
     "prisma": "^5.22.0",
-    "@prisma/client": "^5.22.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3"
