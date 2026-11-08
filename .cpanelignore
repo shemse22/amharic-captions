@@ -8,3 +8,4 @@ tests
 .vscode
 .agents
 .claude
+public/uploads/*
