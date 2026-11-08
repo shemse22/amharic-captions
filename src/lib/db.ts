@@ -1424,32 +1424,61 @@ export const dbService = {
 
   // --- PAYMENT METHODS ---
   async listPaymentMethods(activeOnly: boolean = false): Promise<PaymentMethodRecord[]> {
+    const syncOfficial = (m: any) => {
+      let account = m.account;
+      let holder = m.holder;
+      const nameLower = (m.name || '').toLowerCase();
+      if (nameLower.includes('telebirr')) {
+        account = '0953756775';
+        holder = 'Shemsedin Abate';
+      } else if (nameLower.includes('commercial') || nameLower.includes('cbe')) {
+        account = '1000209324702';
+        holder = 'Shemsedin Abate';
+      } else if (nameLower.includes('abyssinia') || nameLower.includes('boa')) {
+        account = '33045719';
+        holder = 'Shemsedin Abate';
+      } else if (nameLower.includes('awash')) {
+        account = '01425137466500';
+        holder = 'Shemsedin Abate';
+      } else if (nameLower.includes('mpessa')) {
+        account = '0715359665';
+        holder = 'Shemsedin';
+      }
+      return { account, holder };
+    };
+
     try {
       if (await isPrismaReady() && p() && p().paymentMethod) {
         const whereClause = activeOnly ? { where: { isActive: true }, orderBy: { order: 'asc' } } : { orderBy: { order: 'asc' } };
         const methods = await p().paymentMethod.findMany(whereClause);
         if (methods && methods.length > 0) {
-          return methods.map((m: any) => ({
-            id: m.id,
-            name: m.name,
-            amharicName: m.amharicName || m.name,
-            account: m.account,
-            holder: m.holder,
-            color: m.color || 'bg-emerald-600',
-            badge: m.badge || 'Active',
-            instruction: m.instruction || '',
-            isActive: Boolean(m.isActive),
-            order: m.order || 0,
-            createdAt: m.createdAt?.toISOString?.() || new Date().toISOString(),
-            updatedAt: m.updatedAt?.toISOString?.() || new Date().toISOString(),
-          }));
+          return methods.map((m: any) => {
+            const synced = syncOfficial(m);
+            return {
+              id: m.id,
+              name: m.name,
+              amharicName: m.amharicName || m.name,
+              account: synced.account,
+              holder: synced.holder,
+              color: m.color || 'bg-emerald-600',
+              badge: m.badge || 'Active',
+              instruction: m.instruction || '',
+              isActive: Boolean(m.isActive),
+              order: m.order || 0,
+              createdAt: m.createdAt?.toISOString?.() || new Date().toISOString(),
+              updatedAt: m.updatedAt?.toISOString?.() || new Date().toISOString(),
+            };
+          });
         }
       }
     } catch {
       // Fallback to memory
     }
 
-    let list = [...memoryDb.paymentMethods];
+    let list = memoryDb.paymentMethods.map((m) => {
+      const synced = syncOfficial(m);
+      return { ...m, account: synced.account, holder: synced.holder };
+    });
     if (activeOnly) {
       list = list.filter((m) => m.isActive);
     }
