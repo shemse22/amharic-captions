@@ -2345,10 +2345,15 @@ export default function StudioPage() {
 
       // Caption styles & Quality
       fd.append('style', JSON.stringify({
+        presetId: selectedPresetId,
+        presetName: customPresetName,
         fontFamily,
         fontSize,
         fontColor,
         highlightColor: mainHighlightColor,
+        secondHighlightColor,
+        thirdHighlightColor,
+        emphasizedBgColor,
         strokeColor,
         strokeWeight,
         shadowColor,

@@ -10,10 +10,15 @@ export interface CaptionSegment {
 }
 
 export interface CaptionStyleOptions {
+  presetId?: string;
+  presetName?: string;
   fontFamily?: string;
   fontSize?: number; // CSS reference font size (at ~360px viewport)
   fontColor?: string; // hex
   highlightColor?: string; // hex for active word highlight
+  secondHighlightColor?: string;
+  thirdHighlightColor?: string;
+  emphasizedBgColor?: string;
   strokeColor?: string; // hex
   strokeWeight?: 'None' | 'Small' | 'Medium' | 'Large' | number;
   shadowColor?: string; // hex
@@ -125,19 +130,62 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
 
   const targetW = videoWidth || 1080;
   const targetH = videoHeight || 1920;
+  const isVertical = targetH >= targetW;
+
+  // The web studio preview displays the video at approximately 320px wide (or 550px high for 9:16).
+  // Scaling relative to height preserves exact relative font size across any video dimensions (720p, 1080p, 4K, 9:16, 16:9).
+  const heightRatio = targetH / (isVertical ? 550 : 360);
+  const baseFontSize = style.fontSize ?? 28;
+  const scaledFontSize = Math.max(22, Math.round(baseFontSize * heightRatio));
   const scale = targetW / 360;
 
-  const baseFontSize = style.fontSize ?? 28;
-  const scaledFontSize = Math.max(16, Math.round(baseFontSize * scale));
+  const rawPreset = `${style.presetId || ''} ${style.presetName || ''}`.toLowerCase();
+  const isLaura = rawPreset.includes('laura');
+  const isAli = rawPreset.includes('ali');
+  const isKendrick = rawPreset.includes('kendrick');
+  const isLeon = rawPreset.includes('leon');
+  const isMrBeast = rawPreset.includes('beast');
+  const isHormozi = rawPreset.includes('hormozi');
+
+  const hasCustomBg = Boolean(
+    style.emphasizedBgColor &&
+    style.emphasizedBgColor !== 'transparent' &&
+    style.emphasizedBgColor.toLowerCase() !== '#00000000'
+  );
+
+  const isBoxMode = isLaura || isAli || hasCustomBg;
+  const borderStyleVal = isBoxMode ? 3 : 1;
+  const boxPadding = Math.round(scale * 7);
+
+  let strokeWidth = isBoxMode ? boxPadding : getStrokeWidth(style.strokeWeight ?? 'Small', scale);
+  let shadowDepth = isBoxMode ? 0 : getShadowDepth(style.shadowWeight ?? 'Small', scale);
+
+  if (!isBoxMode && (isMrBeast || isHormozi)) {
+    strokeWidth = Math.max(3, Math.round(3.5 * scale));
+    shadowDepth = Math.max(3, Math.round(3 * scale));
+  }
+
+  // Primary text color
+  let primaryColorAss = hexToAssColor(style.fontColor || '#FFFFFF');
+  if (isLaura) {
+    primaryColorAss = hexToAssColor(style.fontColor || '#000000');
+  } else if (isAli) {
+    primaryColorAss = hexToAssColor(style.fontColor || '#111827');
+  }
+
+  // Outline / Box color
+  let outlineColorAss = hexToAssColor(style.strokeColor || '#000000');
+  if (isLaura) {
+    outlineColorAss = hexToAssColor(style.highlightColor || '#FFFFFF'); // White background box
+  } else if (isAli) {
+    outlineColorAss = hexToAssColor(style.emphasizedBgColor || '#E5E7EB'); // Light Gray box
+  } else if (hasCustomBg) {
+    outlineColorAss = hexToAssColor(style.emphasizedBgColor);
+  }
 
   const fontFamily = style.fontFamily || 'Noto Sans Ethiopic';
-  const primaryColorAss = hexToAssColor(style.fontColor || '#FFFFFF');
   const highlightColorAss = hexToAssColor(style.highlightColor || '#FFDD00');
-  const strokeColorAss = hexToAssColor(style.strokeColor || '#000000');
   const shadowColorAss = hexToAssColor(style.shadowColor || '#000000', 60);
-
-  const strokeWidth = getStrokeWidth(style.strokeWeight ?? 'Small', scale);
-  const shadowDepth = getShadowDepth(style.shadowWeight ?? 'Small', scale);
 
   const posX = Math.round(((style.positionX ?? 50) / 100) * targetW);
   const posY = Math.round(((style.positionY ?? 71) / 100) * targetH);
@@ -163,7 +211,7 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
   const styles = [
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    `Style: Default,${fontFamily},${scaledFontSize},${primaryColorAss},${highlightColorAss},${strokeColorAss},${shadowColorAss},-1,0,0,0,100,100,0,0,1,${strokeWidth},${shadowDepth},5,20,20,20,1`,
+    `Style: Default,${fontFamily},${scaledFontSize},${primaryColorAss},${highlightColorAss},${outlineColorAss},${shadowColorAss},-1,0,0,0,100,100,0,0,${borderStyleVal},${strokeWidth},${shadowDepth},5,20,20,20,1`,
     '',
   ];
 
@@ -237,6 +285,84 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
                 const escaped = escapeAssText(w);
                 const isCurrentActive = globalWordIdx === activeWordIndex;
                 globalWordIdx++;
+
+                // Laura 2: White rounded background box, active word has neon lime (#DAF434) pill box
+                if (isLaura) {
+                  const whiteBox = hexToAssColor(style.highlightColor || '#FFFFFF');
+                  const limePill = hexToAssColor(style.secondHighlightColor || '#DAF434');
+                  const textColor = hexToAssColor(style.fontColor || '#000000');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${limePill}\\c${textColor}}${escaped}`;
+                  }
+                  return `{\\3c${whiteBox}\\c${textColor}}${escaped}`;
+                }
+
+                // Kendrick: Active word has lime green pill (#13fd00) with black text
+                if (isKendrick) {
+                  const limePill = hexToAssColor(style.secondHighlightColor || '#13fd00');
+                  const activeText = hexToAssColor('#000000');
+                  const normalText = hexToAssColor(style.fontColor || '#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${limePill}\\c${activeText}}${escaped}`;
+                  }
+                  return `{\\3c&HFF000000&\\c${normalText}}${escaped}`;
+                }
+
+                // Leon: Active word has solid orange (#FF5700) pill with white text
+                if (isLeon) {
+                  const orangePill = hexToAssColor(style.highlightColor || '#FF5700');
+                  const whiteText = hexToAssColor('#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${orangePill}\\c${whiteText}}${escaped}`;
+                  }
+                  return `{\\3c&HFF000000&\\c${whiteText}}${escaped}`;
+                }
+
+                // Ali Abdaal: Light gray background box (#E5E7EB), dark gray text
+                if (isAli) {
+                  const aliBox = hexToAssColor(style.emphasizedBgColor || '#E5E7EB');
+                  const activeText = hexToAssColor(style.fontColor || '#111827');
+                  const normalText = hexToAssColor('#9CA3AF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${aliBox}\\c${activeText}}${escaped}`;
+                  }
+                  return `{\\3c${aliBox}\\c${normalText}}${escaped}`;
+                }
+
+                // MrBeast: Electric yellow / cyan alternating highlights
+                if (isMrBeast) {
+                  const yellowAss = hexToAssColor(style.highlightColor || '#FFE600');
+                  const cyanAss = hexToAssColor(style.secondHighlightColor || '#00F0FF');
+                  const whiteAss = hexToAssColor(style.fontColor || '#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    const activeColor = (globalWordIdx - 1) % 2 === 0 ? yellowAss : cyanAss;
+                    return `{\\c${activeColor}}${escaped}{\\c${whiteAss}}`;
+                  }
+                  return escaped;
+                }
+
+                // Alex Hormozi: Electric yellow (#FFFF00) highlight
+                if (isHormozi) {
+                  const yellowAss = hexToAssColor(style.highlightColor || '#FFFF00');
+                  const whiteAss = hexToAssColor(style.fontColor || '#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\c${yellowAss}}${escaped}{\\c${whiteAss}}`;
+                  }
+                  return escaped;
+                }
+
+                // Custom Background Box
+                if (hasCustomBg) {
+                  const bgAss = hexToAssColor(style.emphasizedBgColor);
+                  const activeText = hexToAssColor(style.highlightColor || '#FFDD00');
+                  const normalText = hexToAssColor(style.fontColor || '#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${bgAss}\\c${activeText}}${escaped}`;
+                  }
+                  return `{\\3c${bgAss}\\c${normalText}}${escaped}`;
+                }
+
+                // Default standard outline + shadow with active word highlight
                 if (hasAnimation && isCurrentActive) {
                   return `{\\c${highlightColorAss}}${escaped}{\\c${primaryColorAss}}`;
                 }
