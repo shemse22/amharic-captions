@@ -5,7 +5,7 @@ import fs from 'fs';
 import os from 'os';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
-import { getLocalTempFilePath } from '@/lib/temp-dir';
+import { getLocalTempDir, getLocalTempFilePath } from '@/lib/temp-dir';
 import {
   generateAssSubtitles,
   CaptionSegment,
@@ -32,18 +32,61 @@ const activeJobs = new Map<string, ExportJob>();
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_EXPORT_UPLOAD_BYTES || 500 * 1024 * 1024);
 const JOB_TTL_MS = 60 * 60 * 1000;
 
+function getJobFilePath(jobId: string): string {
+  const safeId = jobId.replace(/[^a-zA-Z0-9_-]/g, '');
+  return path.join(getLocalTempDir(), `job_${safeId}.json`);
+}
+
+function setExportJob(jobId: string, patch: Partial<ExportJob> & { id?: string }): ExportJob {
+  const existing = activeJobs.get(jobId) || {
+    id: jobId,
+    status: 'processing',
+    progress: 0,
+    createdAt: Date.now(),
+  };
+  const updated: ExportJob = { ...existing, ...patch, id: jobId };
+  activeJobs.set(jobId, updated);
+
+  try {
+    const jobPath = getJobFilePath(jobId);
+    fs.writeFileSync(jobPath, JSON.stringify(updated), 'utf8');
+  } catch {}
+
+  return updated;
+}
+
+function getExportJob(jobId: string): ExportJob | null {
+  const inMem = activeJobs.get(jobId);
+  try {
+    const jobPath = getJobFilePath(jobId);
+    if (fs.existsSync(jobPath)) {
+      const parsed = JSON.parse(fs.readFileSync(jobPath, 'utf8')) as ExportJob;
+      if (parsed && parsed.id) {
+        activeJobs.set(jobId, parsed);
+        return parsed;
+      }
+    }
+  } catch {}
+  return inMem || null;
+}
+
 const cleanupTimer = setInterval(() => {
   const now = Date.now();
   for (const [id, job] of activeJobs) {
-    if (now - job.createdAt > JOB_TTL_MS) activeJobs.delete(id);
+    if (now - job.createdAt > JOB_TTL_MS) {
+      activeJobs.delete(id);
+      try {
+        const p = getJobFilePath(id);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      } catch {}
+    }
   }
 }, 10 * 60 * 1000);
 cleanupTimer.unref?.();
 
 /**
  * Prefer an explicitly configured binary, then a working system binary,
- * then the npm package binary. On shared hosting, set FFMPEG_PATH to the
- * exact executable path reported by `which ffmpeg`.
+ * then standard hosting paths, then the bundled npm package binary.
  */
 function executableWorks(executable: string, args: string[] = ['-version']): boolean {
   try {
@@ -64,6 +107,18 @@ function getFfmpegPath(): string {
 
   if (executableWorks('ffmpeg')) return 'ffmpeg';
 
+  const candidatePaths = [
+    '/usr/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    '/usr/bin/local/ffmpeg',
+    '/bin/ffmpeg',
+    path.join(process.env.HOME || '', 'bin', 'ffmpeg'),
+    path.join(process.env.HOME || '', '.local', 'bin', 'ffmpeg'),
+  ];
+  for (const c of candidatePaths) {
+    if (c && fs.existsSync(c) && executableWorks(c)) return c;
+  }
+
   const bundled = ffmpegInstaller?.path;
   if (bundled && fs.existsSync(bundled) && executableWorks(bundled)) return bundled;
 
@@ -77,6 +132,18 @@ function getFfprobePath(): string {
   if (configured && fs.existsSync(configured) && executableWorks(configured)) return configured;
 
   if (executableWorks('ffprobe')) return 'ffprobe';
+
+  const candidatePaths = [
+    '/usr/bin/ffprobe',
+    '/usr/local/bin/ffprobe',
+    '/usr/bin/local/ffprobe',
+    '/bin/ffprobe',
+    path.join(process.env.HOME || '', 'bin', 'ffprobe'),
+    path.join(process.env.HOME || '', '.local', 'bin', 'ffprobe'),
+  ];
+  for (const c of candidatePaths) {
+    if (c && fs.existsSync(c) && executableWorks(c)) return c;
+  }
 
   const bundled = (ffprobeInstaller as any)?.path as string | undefined;
   if (bundled && fs.existsSync(bundled) && executableWorks(bundled)) return bundled;
@@ -210,23 +277,49 @@ async function resolveInputFile(
 
   if (!storedFileId) throw new Error('No video file or stored fileId provided.');
 
-  // Local paths are restricted to public/uploads to prevent path traversal.
+  // Local paths are restricted to public/uploads or public/
   if (storedFileId.startsWith('/') || storedFileId.includes('/uploads/')) {
-    const marker = storedFileId.indexOf('/uploads/');
-    const relative = marker >= 0
-      ? storedFileId.slice(marker + '/uploads/'.length)
-      : storedFileId.replace(/^\/+/, '').replace(/^uploads\//, '');
+    const cleanId = storedFileId.split('?')[0].split('#')[0];
+    let decodedId = cleanId;
+    try { decodedId = decodeURIComponent(cleanId); } catch {}
+
     const uploadsDir = path.resolve(process.cwd(), 'public', 'uploads');
+    const marker = decodedId.indexOf('/uploads/');
+    const relative = marker >= 0
+      ? decodedId.slice(marker + '/uploads/'.length)
+      : decodedId.replace(/^\/+/, '').replace(/^uploads\//, '');
     const candidate = path.resolve(uploadsDir, relative);
-    if (!candidate.startsWith(`${uploadsDir}${path.sep}`) || !fs.existsSync(candidate)) {
-      throw new Error('Stored video was not found in the uploads directory.');
+    if (candidate.startsWith(`${uploadsDir}${path.sep}`) && fs.existsSync(candidate)) {
+      return { filePath: candidate, isTemporary: false };
     }
-    return { filePath: candidate, isTemporary: false };
+
+    // Check public root directory as well (e.g. sample-video.mp4)
+    const publicDir = path.resolve(process.cwd(), 'public');
+    const relPublic = decodedId.replace(/^\/+/, '');
+    const candidatePublic = path.resolve(publicDir, relPublic);
+    if (candidatePublic.startsWith(`${publicDir}${path.sep}`) && fs.existsSync(candidatePublic)) {
+      return { filePath: candidatePublic, isTemporary: false };
+    }
+
+    throw new Error(`Stored video was not found on server (${relative || decodedId}). Please re-upload your video.`);
   }
 
-  // Remote URL support is HTTPS-only and rejects obvious local/private targets.
+  // Remote URL support
   if (/^https?:\/\//i.test(storedFileId)) {
     const remote = new URL(storedFileId);
+
+    // If pointing to our domain /uploads/... resolve directly on disk
+    if (remote.pathname.includes('/uploads/')) {
+      const rel = remote.pathname.slice(remote.pathname.indexOf('/uploads/') + '/uploads/'.length);
+      let decodedRel = rel;
+      try { decodedRel = decodeURIComponent(rel); } catch {}
+      const uploadsDir = path.resolve(process.cwd(), 'public', 'uploads');
+      const candidate = path.resolve(uploadsDir, decodedRel);
+      if (candidate.startsWith(`${uploadsDir}${path.sep}`) && fs.existsSync(candidate)) {
+        return { filePath: candidate, isTemporary: false };
+      }
+    }
+
     if (remote.protocol !== 'https:' || isPrivateOrLocalHost(remote.hostname)) {
       throw new Error('Only public HTTPS video URLs are supported.');
     }
@@ -247,7 +340,7 @@ async function resolveInputFile(
     return { filePath: tempPath, isTemporary: true };
   }
 
-  throw new Error('Invalid video reference. Supply an uploaded file or a fileId from public/uploads.');
+  throw new Error('Invalid video reference. Supply an uploaded file or a valid video URL.');
 }
 
 function parseSegments(value: unknown): CaptionSegment[] {
@@ -279,7 +372,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (jobId && !fileParam) {
-    const job = activeJobs.get(jobId);
+    const job = getExportJob(jobId);
     if (!job) return NextResponse.json({ success: false, error: 'Export job not found' }, { status: 404 });
     return NextResponse.json({ success: true, ...job });
   }
@@ -378,6 +471,14 @@ export async function POST(req: NextRequest) {
         captionStyle = json.style;
       }
     }
+
+    // Register job immediately so poller and multi-process Passenger see it right away
+    setExportJob(jobId, {
+      id: jobId,
+      status: 'processing',
+      progress: 0,
+      createdAt: Date.now(),
+    });
 
     if (segments.length === 0) {
       throw new Error('No valid subtitle segments provided for export.');
@@ -531,7 +632,7 @@ export async function POST(req: NextRequest) {
       return args.concat(encodeArgs);
     };
 
-    activeJobs.set(jobId, {
+    setExportJob(jobId, {
       id: jobId,
       status: 'processing',
       progress: 0,
@@ -611,8 +712,7 @@ export async function POST(req: NextRequest) {
             });
           } catch (error: any) {
             const message = error?.message || 'Could not start FFmpeg.';
-            const job = activeJobs.get(jobId);
-            if (job) { job.status = 'failed'; job.error = message; }
+            setExportJob(jobId, { status: 'failed', error: message });
             send({ type: 'error', error: message });
             cleanup();
             close();
@@ -631,8 +731,7 @@ export async function POST(req: NextRequest) {
               const percent = Math.min(96, Math.max(1, Math.round((currentSeconds / duration) * 100)));
               if (percent !== lastPercent) {
                 lastPercent = percent;
-                const job = activeJobs.get(jobId);
-                if (job) job.progress = percent;
+                setExportJob(jobId, { progress: percent });
                 send({ type: 'progress', percent, currentSec: currentSeconds.toFixed(1), totalSec: duration.toFixed(1) });
               }
             }
@@ -652,8 +751,7 @@ export async function POST(req: NextRequest) {
             if (processSettled) return;
             processSettled = true;
             const message = `FFmpeg failed to start: ${error.message}`;
-            const job = activeJobs.get(jobId);
-            if (job) { job.status = 'failed'; job.error = message; }
+            setExportJob(jobId, { status: 'failed', error: message });
             send({ type: 'error', error: message });
             cleanup();
             close();
@@ -713,8 +811,7 @@ export async function POST(req: NextRequest) {
 
               const diagnostic = tail.trim() || head.trim();
               const message = `FFmpeg exited with code ${exitCode}.\n${diagnostic || 'No FFmpeg diagnostic output was captured.'}`;
-              const job = activeJobs.get(jobId);
-              if (job) { job.status = 'failed'; job.error = message; }
+              setExportJob(jobId, { status: 'failed', error: message });
               send({ type: 'error', error: message });
               cleanup();
               close();
@@ -737,14 +834,13 @@ export async function POST(req: NextRequest) {
 
               keepOutput = true;
               const downloadUrl = `/api/export?file=${encodeURIComponent(fileName)}`;
-              const job = activeJobs.get(jobId);
-              if (job) {
-                job.status = 'completed';
-                job.progress = 100;
-                job.downloadUrl = downloadUrl;
-                job.fileName = fileName;
-                job.warnings = validation.warnings;
-              }
+              setExportJob(jobId, {
+                status: 'completed',
+                progress: 100,
+                downloadUrl,
+                fileName,
+                warnings: validation.warnings,
+              });
 
               send({
                 type: 'complete',
@@ -762,8 +858,7 @@ export async function POST(req: NextRequest) {
               });
             } catch (error: any) {
               const message = error?.message || 'Video export validation failed.';
-              const job = activeJobs.get(jobId);
-              if (job) { job.status = 'failed'; job.error = message; }
+              setExportJob(jobId, { status: 'failed', error: message });
               send({ type: 'error', error: message });
             } finally {
               cleanup();
@@ -793,7 +888,7 @@ export async function POST(req: NextRequest) {
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform, must-revalidate',
+        'Cache-Control': 'no-cache, no-transform, no-store, must-revalidate',
         'Connection': 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
@@ -802,8 +897,7 @@ export async function POST(req: NextRequest) {
     const message = error?.message || 'Export failed.';
     console.error(`[Bgern export ${jobId}]`, error);
 
-    const job = activeJobs.get(jobId);
-    if (job) { job.status = 'failed'; job.error = message; }
+    setExportJob(jobId, { status: 'failed', error: message });
 
     try { if (assPath && fs.existsSync(assPath)) fs.unlinkSync(assPath); } catch {}
     try {
@@ -815,7 +909,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { success: false, jobId, error: message },
-      { status: 500 },
+      { status: 400 },
     );
   }
 }

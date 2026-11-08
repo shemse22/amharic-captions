@@ -2193,15 +2193,51 @@ export default function StudioPage() {
     activeSoloClipRef.current = null;
 
     const exportJobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    let exportSucceeded = false;
 
-    // Fallback polling helper to guarantee export completion even if the SSE stream drops
+    // Helper to trigger video file download exactly once
+    const triggerDownload = (url: string, name?: string) => {
+      if (exportSucceeded) return;
+      exportSucceeded = true;
+      setBurnProgress(100);
+      setExportDownloadUrl(url);
+      setExportFileName(name || null);
+      setExportComplete(
+        'Universal MP4 video ready!\nQuality: ' + quality.toUpperCase() + ' (H.264 CFR 30fps)'
+      );
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name || 'bgern_captioned_' + quality + '.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (dlErr) {
+        console.warn('Auto-download trigger failed:', dlErr);
+      }
+    };
+
+    // Polling helper: runs concurrently to guarantee live progress even if SSE is buffered by proxies
     const pollExportJob = async (jobId: string): Promise<boolean> => {
       const pollStart = Date.now();
       const maxPollMs = 300000; // 5 minutes max
-      while (Date.now() - pollStart < maxPollMs) {
-        await new Promise((r) => setTimeout(r, 2000));
+      let consecutive404 = 0;
+
+      while (Date.now() - pollStart < maxPollMs && isBurningRef.current && !exportSucceeded) {
+        await new Promise((r) => setTimeout(r, 1500));
+        if (!isBurningRef.current || exportSucceeded) break;
+
         try {
           const pollRes = await fetch(`/api/export?jobId=${encodeURIComponent(jobId)}`);
+          if (pollRes.status === 404) {
+            consecutive404++;
+            if (consecutive404 >= 4) {
+              throw new Error('Export job was cancelled or not found on the server.');
+            }
+            continue;
+          }
+          consecutive404 = 0;
+
           if (pollRes.ok) {
             const jobData = await pollRes.json();
             if (jobData.status === 'processing') {
@@ -2209,23 +2245,10 @@ export default function StudioPage() {
                 setBurnProgress(Math.max(5, Math.min(99, jobData.progress)));
               }
             } else if (jobData.status === 'completed' && jobData.downloadUrl) {
-              setBurnProgress(100);
-              setExportDownloadUrl(jobData.downloadUrl);
-              setExportFileName(jobData.fileName);
-              setExportComplete(
-                'Universal MP4 video ready!\nQuality: ' + quality.toUpperCase() + ' (H.264 CFR 30fps)'
-              );
-              if (jobData.downloadUrl) {
-                const a = document.createElement('a');
-                a.href = jobData.downloadUrl;
-                a.download = jobData.fileName || 'bgern_captioned_' + quality + '.mp4';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              }
+              triggerDownload(jobData.downloadUrl, jobData.fileName);
               return true;
             } else if (jobData.status === 'failed') {
-              throw new Error(jobData.error || 'Server video export failed');
+              throw new Error(jobData.error || 'Server video export failed.');
             }
           }
         } catch (pollErr: any) {
@@ -2234,46 +2257,47 @@ export default function StudioPage() {
           }
         }
       }
-      return false;
+      return exportSucceeded;
     };
 
-    try {
-      const formData = new FormData();
-      formData.append('jobId', exportJobId);
+    // Form data builder with optional forced direct upload
+    const buildExportFormData = async (forceDirectFile: boolean): Promise<FormData> => {
+      const fd = new FormData();
+      fd.append('jobId', exportJobId);
 
-      // 1. Source Video File or Stored URL
-      let resolvedVideoUrl = serverVideoUrl;
-      if (!resolvedVideoUrl && mediaUrl && !mediaUrl.startsWith('blob:')) {
-        resolvedVideoUrl = mediaUrl;
-      }
-      if (!resolvedVideoUrl && uploadingToLibrary) {
-        for (let w = 0; w < 10; w++) {
-          await new Promise((r) => setTimeout(r, 1000));
-          if (serverVideoUrl) {
-            resolvedVideoUrl = serverVideoUrl;
-            break;
-          }
+      let videoAttached = false;
+
+      if (!forceDirectFile) {
+        if (serverVideoUrl && !serverVideoUrl.startsWith('blob:')) {
+          fd.append('url', serverVideoUrl);
+          videoAttached = true;
+        } else if (mediaUrl && !mediaUrl.startsWith('blob:')) {
+          fd.append('url', mediaUrl);
+          videoAttached = true;
         }
       }
 
-      if (resolvedVideoUrl) {
-        formData.append('url', resolvedVideoUrl);
-      } else if (mediaFile) {
-        formData.append('video', mediaFile);
-      } else if (mediaUrl) {
-        if (mediaUrl.startsWith('blob:')) {
+      if (!videoAttached) {
+        if (mediaFile) {
+          fd.append('video', mediaFile, mediaFile.name || 'video.mp4');
+          videoAttached = true;
+        } else if (mediaUrl && mediaUrl.startsWith('blob:')) {
           try {
             const blob = await fetch(mediaUrl).then((r) => r.blob());
-            formData.append('video', blob, (mediaFile as any)?.name || 'video.mp4');
-          } catch {
-            formData.append('url', mediaUrl);
+            fd.append('video', blob, (mediaFile as any)?.name || 'video.mp4');
+            videoAttached = true;
+          } catch (e) {
+            console.warn('Could not extract blob from mediaUrl:', e);
           }
-        } else {
-          formData.append('url', mediaUrl);
         }
       }
 
-      // 2. Subtitle Segments (filtered if clipRange provided)
+      if (!videoAttached) {
+        const fallback = serverVideoUrl || mediaUrl;
+        if (fallback) fd.append('url', fallback);
+      }
+
+      // Filter segments if clipRange is active
       let exportSegments = segments;
       if (clipRange) {
         exportSegments = segments
@@ -2284,10 +2308,10 @@ export default function StudioPage() {
             end: Math.max(0, s.end - clipRange.start),
           }));
       }
-      formData.append('segments', JSON.stringify(exportSegments));
+      fd.append('segments', JSON.stringify(exportSegments));
 
-      // 3. Caption Style Options
-      const stylePayload = {
+      // Caption styles & Quality
+      fd.append('style', JSON.stringify({
         fontFamily,
         fontSize,
         fontColor,
@@ -2303,12 +2327,16 @@ export default function StudioPage() {
         hasAnimation,
         textCase,
         hasPunctuation,
-      };
-      formData.append('style', JSON.stringify(stylePayload));
-      formData.append('quality', quality);
+      }));
+      fd.append('quality', quality);
 
-      // 4. Request server-side export with SSE stream
-      const response = await fetch('/api/export', {
+      return fd;
+    };
+
+    try {
+      // 1. Send Export request with fallback to direct upload if stored file missing
+      let formData = await buildExportFormData(false);
+      let response = await fetch('/api/export', {
         method: 'POST',
         body: formData,
       });
@@ -2320,80 +2348,89 @@ export default function StudioPage() {
           const errJson = JSON.parse(errText);
           if (errJson.error) errMsg = errJson.error;
         } catch {}
-        throw new Error(errMsg);
+
+        const canRetryWithFile = !!mediaFile || (!!mediaUrl && mediaUrl.startsWith('blob:'));
+        if (canRetryWithFile && /not found|invalid video/i.test(errMsg)) {
+          console.log('Server video missing on disk. Retrying with direct browser upload...');
+          setBurnProgress(3);
+          formData = await buildExportFormData(true);
+          response = await fetch('/api/export', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const retryErrText = await response.text().catch(() => '');
+            let retryErrMsg = errMsg;
+            try {
+              const retryJson = JSON.parse(retryErrText);
+              if (retryJson.error) retryErrMsg = retryJson.error;
+            } catch {}
+            throw new Error(retryErrMsg);
+          }
+        } else {
+          throw new Error(errMsg);
+        }
       }
 
-      if (!response.body) {
-        throw new Error('No response stream received from export server.');
-      }
+      // 2. Start background polling concurrently to handle proxy-buffered SSE streams
+      pollExportJob(exportJobId).catch((pollErr) => {
+        if (!exportSucceeded && isBurningRef.current) {
+          console.warn('Background poller notification:', pollErr);
+        }
+      });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let streamBuffer = '';
-      let isDone = false;
+      // 3. Process SSE stream
+      if (response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let streamBuffer = '';
 
-      while (!isDone) {
-        const { value, done } = await reader.read();
-        if (done) break;
+        while (!exportSucceeded && isBurningRef.current) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-        streamBuffer += decoder.decode(value, { stream: true });
-        const events = streamBuffer.split('\n\n');
-        streamBuffer = events.pop() || '';
+          streamBuffer += decoder.decode(value, { stream: true });
+          const events = streamBuffer.split('\n\n');
+          streamBuffer = events.pop() || '';
 
-        for (const evt of events) {
-          const trimmed = evt.trim();
-          if (!trimmed.startsWith('data:')) continue;
-          const jsonStr = trimmed.slice(5).trim();
-          if (!jsonStr) continue;
+          for (const evt of events) {
+            const trimmed = evt.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const jsonStr = trimmed.slice(5).trim();
+            if (!jsonStr) continue;
 
-          try {
-            const data = JSON.parse(jsonStr);
-            if (data.type === 'start') {
-              setBurnProgress(5);
-            } else if (data.type === 'progress') {
-              if (typeof data.percent === 'number') {
-                setBurnProgress(Math.max(5, Math.min(99, data.percent)));
+            try {
+              const data = JSON.parse(jsonStr);
+              if (data.type === 'start') {
+                setBurnProgress(5);
+              } else if (data.type === 'progress') {
+                if (typeof data.percent === 'number') {
+                  setBurnProgress(Math.max(5, Math.min(99, data.percent)));
+                }
+              } else if (data.type === 'complete') {
+                triggerDownload(data.downloadUrl, data.fileName);
+                break;
+              } else if (data.type === 'error') {
+                throw new Error(data.error || 'Server video export failed');
               }
-            } else if (data.type === 'complete') {
-              setBurnProgress(100);
-              setExportDownloadUrl(data.downloadUrl);
-              setExportFileName(data.fileName);
-              setExportComplete(
-                'Universal MP4 video ready!\nQuality: ' + quality.toUpperCase() + ' (H.264 CFR 30fps)'
-              );
-              isDone = true;
-
-              // Auto-trigger direct download
-              if (data.downloadUrl) {
-                const a = document.createElement('a');
-                a.href = data.downloadUrl;
-                a.download = data.fileName || 'bgern_captioned_' + quality + '.mp4';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+            } catch (parseErr: any) {
+              if (parseErr.message && !parseErr.message.includes('JSON')) {
+                throw parseErr;
               }
-            } else if (data.type === 'error') {
-              throw new Error(data.error || 'Server video export failed');
-            }
-          } catch (parseErr: any) {
-            if (parseErr.message && !parseErr.message.includes('JSON')) {
-              throw parseErr;
             }
           }
         }
       }
-    } catch (err: any) {
-      console.warn('Export stream interrupted or network issue, polling background job:', err);
-      try {
-        const polledOk = await pollExportJob(exportJobId);
-        if (polledOk) {
-          return;
-        }
-      } catch (pollErr: any) {
-        console.error('Export background polling failed:', pollErr);
-        err = pollErr;
-      }
 
+      // If SSE closed but job is still finalizing on server, wait on poller
+      if (!exportSucceeded && isBurningRef.current) {
+        const ok = await pollExportJob(exportJobId);
+        if (!ok && !exportSucceeded) {
+          throw new Error('Video export ended without receiving output file.');
+        }
+      }
+    } catch (err: any) {
       console.error('Server export error:', err);
       setExportError({
         message: err.message || 'Server export failed',
@@ -5651,6 +5688,19 @@ export default function StudioPage() {
                 <span>Progress</span>
                 <span className="font-bold text-neutral-900 dark:text-white">{burnProgress}%</span>
               </div>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBurning(false);
+                  isBurningRef.current = false;
+                }}
+                className="px-4 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                ሰርዝ (Cancel)
+              </button>
             </div>
           </div>
         </div>
