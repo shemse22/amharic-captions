@@ -196,6 +196,63 @@ function parseFps(value?: string): number {
 }
 
 /**
+ * Maps CSS/UI font family names to their actual font files in public/fonts/.
+ * Returns the resolved {fontFile, fontFamily} pair that FFmpeg libass can load.
+ * Falls back to Noto Sans Ethiopic when the requested font is not available locally.
+ *
+ * IMPORTANT: The Fontname in the ASS [V4+ Styles] section MUST match the
+ * actual family name embedded in the font file — not the CSS name, file basename,
+ * or display label. FFmpeg libass uses this name to look up the font inside fontsdir.
+ */
+function resolveFontForExport(
+  requestedFamily: string | undefined,
+  fontsDir: string,
+): { fontFile: string; assFamily: string } {
+  const DEFAULT_FILE = 'NotoSansEthiopic-Regular.ttf';
+  const DEFAULT_FAMILY = 'Noto Sans Ethiopic';
+
+  // Mapping from UI/CSS font family name  →  { file in public/fonts/, ASS family name }
+  // ASS family names were verified by opening each TTF in a font viewer.
+  const FONT_MAP: Record<string, { file: string; family: string }> = {
+    'Noto Sans Ethiopic':          { file: 'NotoSansEthiopic-Regular.ttf', family: 'Noto Sans Ethiopic' },
+    'NotoSansEthiopic':            { file: 'NotoSansEthiopic-Regular.ttf', family: 'Noto Sans Ethiopic' },
+    'Noto Sans':                   { file: 'NotoSans-Regular.ttf',         family: 'Noto Sans' },
+    'SurGraphics Black':           { file: 'surgraphics-black.ttf',        family: 'SurGraphics Black' },
+    'surgraphics-black':           { file: 'surgraphics-black.ttf',        family: 'SurGraphics Black' },
+    'Zemenay':                     { file: 'zemenay.ttf',                  family: 'Zemenay' },
+    'Bela Bereka':                 { file: 'bela-bereka.ttf',              family: 'Bela Bereka' },
+    'Loga Display':                { file: 'loga-display.ttf',             family: 'Loga Display' },
+    'Geez Digital':                { file: 'geez-digital.ttf',             family: 'Geez Digital' },
+    'Waldba Wookianos':            { file: 'waldba-wookianos.ttf',         family: 'Waldba Wookianos' },
+    'Abyssinica SIL Connected':    { file: 'abyssinica-sil-connected.ttf', family: 'Abyssinica SIL Connected' },
+    'Ethiopic Lessan':             { file: 'ethiopic-lessan.ttf',          family: 'Ethiopic Lessan' },
+    'Amhara Reduced':              { file: 'amhara-reduced.otf',           family: 'Amhara Reduced' },
+    'HH Lemd Mono':                { file: 'hh-lemd-mono.otf',             family: 'HH Lemd Mono' },
+  };
+
+  const key = (requestedFamily || '').trim();
+  const entry = FONT_MAP[key];
+
+  if (entry) {
+    const fullPath = path.join(fontsDir, entry.file);
+    if (fs.existsSync(fullPath)) {
+      console.log(`[export] Font resolved: "${key}" → ${entry.file} (family: "${entry.family}")`);
+      return { fontFile: entry.file, assFamily: entry.family };
+    }
+    console.warn(`[export] Font file missing for "${key}": ${fullPath} — falling back to Noto Sans Ethiopic`);
+  } else {
+    console.warn(`[export] Unknown font family "${key}" — falling back to Noto Sans Ethiopic`);
+  }
+
+  // Always fall back to Noto Sans Ethiopic which is guaranteed to be present
+  const fallbackPath = path.join(fontsDir, DEFAULT_FILE);
+  if (!fs.existsSync(fallbackPath)) {
+    throw new Error(`Default fallback font not found: ${fallbackPath}. Ensure NotoSansEthiopic-Regular.ttf is in public/fonts/.`);
+  }
+  return { fontFile: DEFAULT_FILE, assFamily: DEFAULT_FAMILY };
+}
+
+/**
  * ASS Fontname must be a font family name, not a filesystem path.
  * Resolve path-like font names to the actual family using fontconfig where
  * possible. The fonts themselves are still loaded from the fontsdir folder.
@@ -553,13 +610,24 @@ export async function POST(req: NextRequest) {
     if (!Number.isFinite(duration) || duration <= 0) throw new Error('Could not determine source video duration.');
 
     assPath = getLocalTempFilePath('subtitles', '.ass');
+
+    // Resolve the CSS/UI font family name to an actual font file present in public/fonts/.
+    // This is critical: FFmpeg libass looks up fonts by family name inside the fontsdir.
+    // If the requested font (e.g. "Montserrat") is not in fontsdir, libass silently renders
+    // no captions. We always fall back to Noto Sans Ethiopic which is guaranteed to exist.
+    const { assFamily: resolvedFontFamily } = resolveFontForExport(captionStyle.fontFamily, fontsDir);
+    console.log(`[export] segments: ${segments.length}, font: "${captionStyle.fontFamily}" → ASS: "${resolvedFontFamily}"`);
+
     const updateAssFile = async (w: number, h: number) => {
       const assContent = generateAssSubtitles({
         segments,
         videoWidth: w,
         videoHeight: h,
-        style: captionStyle,
+        style: { ...captionStyle, fontFamily: resolvedFontFamily },
       });
+      // normalizeAssFontNames only applies when the ASS Fontname is a file path — after
+      // resolveFontForExport the name is already a clean family name so it's a no-op here,
+      // but we keep it as a safety net for any legacy path-like names.
       const normalizedAss = normalizeAssFontNames(assContent, fontsDir);
       await fs.promises.writeFile(assPath, normalizedAss, 'utf8');
     };
@@ -575,9 +643,20 @@ export async function POST(req: NextRequest) {
       throw new Error('This FFmpeg build does not include the libx264 encoder. Configure FFMPEG_PATH to a build with libx264 support.');
     }
 
+    // Check if the subtitle filter (libass) is available. If not, captions can't be burned in.
+    const availableFilters = runCapture(ffmpegPath, ['-hide_banner', '-filters']);
+    const hasSubtitlesFilter = availableFilters.includes('subtitles');
+    const hasAssFilter = availableFilters.includes(' ass ');
+    if (!hasSubtitlesFilter && !hasAssFilter) {
+      throw new Error('This FFmpeg build does not include libass (subtitles/ass filter). Captions cannot be burned. Configure FFMPEG_PATH to a build with libass support.');
+    }
+    console.log(`[export] FFmpeg subtitle filters: subtitles=${hasSubtitlesFilter}, ass=${hasAssFilter}`);
+
     const buildFfmpegArgs = (attempt: number, curWidth: number, curHeight: number, curScaleFilter: string) => {
-      const subtitleFilter =
-        `subtitles=filename='${escapeFilterPath(assPath)}':fontsdir='${escapeFilterPath(fontsDir)}'`;
+      // Use 'subtitles' filter (preferred) or fall back to 'ass' filter, both backed by libass.
+      const subtitleFilter = hasSubtitlesFilter
+        ? `subtitles=filename='${escapeFilterPath(assPath)}':fontsdir='${escapeFilterPath(fontsDir)}'`
+        : `ass='${escapeFilterPath(assPath)}'`;
       const videoFilter = `setpts=PTS-STARTPTS,${curScaleFilter},fps=${targetFps},${subtitleFilter}`;
 
       const decoderThreads = attempt === 1 ? '2' : '1';
@@ -587,7 +666,7 @@ export async function POST(req: NextRequest) {
         '-y',
         '-nostdin',
         '-threads', decoderThreads,
-        '-loglevel', 'warning',
+        '-loglevel', 'verbose',
         '-progress', 'pipe:1',
         '-threads', decoderThreads,
         '-i', inputPath,
