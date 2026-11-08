@@ -15,7 +15,7 @@ import { probeMedia, validateExportedVideo } from '@/lib/video-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const maxDuration = 1800;
 
 type ExportJob = {
   id: string;
@@ -666,7 +666,7 @@ export async function POST(req: NextRequest) {
         '-y',
         '-nostdin',
         '-threads', decoderThreads,
-        '-loglevel', 'verbose',
+        '-loglevel', 'warning',
         '-progress', 'pipe:1',
         '-threads', decoderThreads,
         '-i', inputPath,
@@ -691,13 +691,11 @@ export async function POST(req: NextRequest) {
         '-pix_fmt', 'yuv420p',
       ];
 
-      // Proven working flags from cPanel diagnostic: single thread + ultrafast + sliced-threads=0
-      // encodes at 32.3x speed with exit code 0 on the 32-core CloudLinux host.
+      // Multi-threaded encoding: attempt 1 uses 2 threads for fast rendering while staying well
+      // inside CloudLinux LVE limits; attempt 2 falls back to 1 thread if needed.
+      const encThreads = attempt === 1 ? '2' : '1';
       encodeArgs.push(
-        '-threads', '1',
-        '-x264-params', 'threads=1:lookahead-threads=0:sliced-threads=0',
-        '-filter_threads', '1',
-        '-filter_complex_threads', '1',
+        '-threads', encThreads,
       );
 
       // Strict Constant Frame Rate (CFR), Closed GOP (+cgop), and faststart

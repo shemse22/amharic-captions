@@ -2231,17 +2231,16 @@ export default function StudioPage() {
       }
     };
 
-    // Primary progress mechanism: poll /api/export?jobId=... every 2s
-    // This is the ONLY reliable method on cPanel where Apache buffers SSE streams.
-    // Returns when: job completed, job failed, cancel requested, or 5-min timeout.
-    const pollExportJob = async (jobId: string): Promise<boolean> => {
+    // Primary progress mechanism: poll /api/export?jobId=... every 1.5s
+    // Runs in PARALLEL with the export POST so UI updates immediately even if Apache buffers the POST response.
+    const pollExportJob = async (jobId: string, isUploadFinished: () => boolean): Promise<boolean> => {
       const pollStart = Date.now();
-      const maxPollMs = 300000; // 5 minutes max
+      const maxPollMs = 1800000; // 30 minutes max (supports long videos)
       let consecutive404 = 0;
       let lastProgress = 0;
 
       while (Date.now() - pollStart < maxPollMs && isBurningRef.current && !exportSucceeded) {
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 1500));
         if (!isBurningRef.current || exportSucceeded) break;
 
         try {
@@ -2251,8 +2250,8 @@ export default function StudioPage() {
 
           if (pollRes.status === 404) {
             consecutive404++;
-            // Job not found 3x in a row = server never started it
-            if (consecutive404 >= 3) {
+            // Only fail with 404 if the initial POST/upload has finished AND job is missing 10+ times (15s)
+            if (isUploadFinished() && consecutive404 >= 10) {
               throw new Error('Export job not found on server. The video file may be missing. Please re-upload your video and try again.');
             }
             continue;
@@ -2260,7 +2259,6 @@ export default function StudioPage() {
           consecutive404 = 0;
 
           if (!pollRes.ok) {
-            // Non-404 error — wait and retry
             continue;
           }
 
@@ -2270,10 +2268,9 @@ export default function StudioPage() {
             if (prog > lastProgress) {
               lastProgress = prog;
               setBurnProgress(Math.max(5, Math.min(99, prog)));
-            } else if (prog === 0 && Date.now() - pollStart > 15000) {
-              // Still at 0% after 15s — show a fake animation so user knows it's running
-              const fakeProgress = Math.min(30, Math.round((Date.now() - pollStart) / 1000));
-              setBurnProgress(Math.max(lastProgress, fakeProgress));
+            } else if (prog === 0 && Date.now() - pollStart > 5000) {
+              // Transition from 'Connecting...' to 'Processing...' after 5s
+              setBurnProgress((p) => Math.max(p, 5));
             }
           } else if (jobData.status === 'completed' && jobData.downloadUrl) {
             triggerDownload(jobData.downloadUrl, jobData.fileName);
@@ -2284,7 +2281,6 @@ export default function StudioPage() {
           }
         } catch (pollErr: any) {
           const msg = pollErr?.message || '';
-          // Rethrow real errors (not transient network/fetch errors)
           if (msg && !msg.toLowerCase().includes('fetch') && !msg.toLowerCase().includes('network') && !msg.toLowerCase().includes('failed to fetch')) {
             throw pollErr;
           }
@@ -2371,108 +2367,111 @@ export default function StudioPage() {
     };
 
     try {
-      // 1. Send Export request with fallback to direct upload if stored file missing
-      let formData = await buildExportFormData(false);
-      let response = await fetch('/api/export', {
-        method: 'POST',
-        body: formData,
-      });
+      let uploadFinished = false;
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        let errMsg = 'Export request failed (HTTP ' + response.status + ')';
-        try {
-          const errJson = JSON.parse(errText);
-          if (errJson.error) errMsg = errJson.error;
-        } catch {}
+      // 1. PRIMARY: Poll for progress concurrently from second 0
+      // This guarantees progress updates even when Apache completely buffers the POST response
+      const pollPromise = pollExportJob(exportJobId, () => uploadFinished);
 
-        const canRetryWithFile = !!mediaFile || (!!mediaUrl && mediaUrl.startsWith('blob:'));
-        if (canRetryWithFile && /not found|invalid video/i.test(errMsg)) {
-          console.log('Server video missing on disk. Retrying with direct browser upload...');
-          setBurnProgress(3);
-          formData = await buildExportFormData(true);
-          response = await fetch('/api/export', {
-            method: 'POST',
-            body: formData,
-          });
+      // 2. Send Export request with fallback to direct upload if stored file missing
+      const postPromise = (async () => {
+        let formData = await buildExportFormData(false);
+        let response = await fetch('/api/export', {
+          method: 'POST',
+          body: formData,
+        });
 
-          if (!response.ok) {
-            const retryErrText = await response.text().catch(() => '');
-            let retryErrMsg = errMsg;
-            try {
-              const retryJson = JSON.parse(retryErrText);
-              if (retryJson.error) retryErrMsg = retryJson.error;
-            } catch {}
-            throw new Error(retryErrMsg);
-          }
-        } else {
-          throw new Error(errMsg);
-        }
-      }
+        uploadFinished = true;
 
-      // 2. PRIMARY: Poll for progress (works even when Apache buffers SSE).
-      //    Also attempt to read SSE if available, whichever resolves first wins.
-      const pollPromise = pollExportJob(exportJobId);
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          let errMsg = 'Export request failed (HTTP ' + response.status + ')';
+          try {
+            const errJson = JSON.parse(errText);
+            if (errJson.error) errMsg = errJson.error;
+          } catch {}
 
-      // 3. SECONDARY: Try SSE stream in parallel (may be fully buffered on cPanel)
-      const ssePromise = (async () => {
-        if (!response.body) return;
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let streamBuffer = '';
+          const canRetryWithFile = !!mediaFile || (!!mediaUrl && mediaUrl.startsWith('blob:'));
+          if (canRetryWithFile && /not found|invalid video/i.test(errMsg)) {
+            console.log('Server video missing on disk. Retrying with direct browser upload...');
+            setBurnProgress(3);
+            uploadFinished = false;
+            formData = await buildExportFormData(true);
+            response = await fetch('/api/export', {
+              method: 'POST',
+              body: formData,
+            });
+            uploadFinished = true;
 
-        try {
-          while (!exportSucceeded && isBurningRef.current) {
-            // SSE read with 30s timeout — if no data in 30s, assume Apache is buffering
-            const readResult = await Promise.race([
-              reader.read(),
-              new Promise<{ value: undefined; done: true }>((resolve) =>
-                setTimeout(() => resolve({ value: undefined, done: true as const }), 30000)
-              ),
-            ]);
-            if (readResult.done || !readResult.value) break;
-
-            streamBuffer += decoder.decode(readResult.value, { stream: true });
-            const events = streamBuffer.split('\n\n');
-            streamBuffer = events.pop() || '';
-
-            for (const evt of events) {
-              const trimmed = evt.trim();
-              if (!trimmed.startsWith('data:')) continue;
-              const jsonStr = trimmed.slice(5).trim();
-              if (!jsonStr) continue;
-
+            if (!response.ok) {
+              const retryErrText = await response.text().catch(() => '');
+              let retryErrMsg = errMsg;
               try {
-                const data = JSON.parse(jsonStr);
-                if (data.type === 'start') {
-                  setBurnProgress((p) => Math.max(p, 5));
-                } else if (data.type === 'progress' && typeof data.percent === 'number') {
-                  setBurnProgress(Math.max(5, Math.min(99, data.percent)));
-                } else if (data.type === 'complete') {
-                  triggerDownload(data.downloadUrl, data.fileName);
-                  break;
-                } else if (data.type === 'error') {
-                  throw new Error(data.error || 'Server video export failed');
+                const retryJson = JSON.parse(retryErrText);
+                if (retryJson.error) retryErrMsg = retryJson.error;
+              } catch {}
+              throw new Error(retryErrMsg);
+            }
+          } else {
+            throw new Error(errMsg);
+          }
+        }
+
+        // Secondary: If SSE events arrive through the response body, parse them too
+        if (response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let streamBuffer = '';
+
+          try {
+            while (!exportSucceeded && isBurningRef.current) {
+              const { value, done } = await reader.read();
+              if (done || !value) break;
+
+              streamBuffer += decoder.decode(value, { stream: true });
+              const events = streamBuffer.split('\n\n');
+              streamBuffer = events.pop() || '';
+
+              for (const evt of events) {
+                const trimmed = evt.trim();
+                if (!trimmed.startsWith('data:')) continue;
+                const jsonStr = trimmed.slice(5).trim();
+                if (!jsonStr) continue;
+
+                try {
+                  const data = JSON.parse(jsonStr);
+                  if (data.type === 'start') {
+                    setBurnProgress((p) => Math.max(p, 5));
+                  } else if (data.type === 'progress' && typeof data.percent === 'number') {
+                    setBurnProgress(Math.max(5, Math.min(99, data.percent)));
+                  } else if (data.type === 'complete') {
+                    triggerDownload(data.downloadUrl, data.fileName);
+                    break;
+                  } else if (data.type === 'error') {
+                    throw new Error(data.error || 'Server video export failed');
+                  }
+                } catch (parseErr: any) {
+                  if (parseErr.message && !parseErr.message.includes('JSON')) throw parseErr;
                 }
-              } catch (parseErr: any) {
-                if (parseErr.message && !parseErr.message.includes('JSON')) throw parseErr;
               }
             }
+          } finally {
+            try { reader.cancel(); } catch {}
           }
-        } finally {
-          try { reader.cancel(); } catch {}
         }
       })();
 
-      // Wait for whichever finishes first; ignore SSE errors (poller is authoritative)
+      // Wait for whichever finishes first; poller handles errors authoritatively
       await Promise.race([
         pollPromise.then(() => {}),
-        ssePromise.catch(() => {}),
+        postPromise.catch((postErr) => {
+          throw postErr;
+        }),
       ]);
 
-      // If poll didn't trigger download, wait for it to fully complete
+      // If poll didn't trigger download yet, wait for completion
       await pollPromise.catch((pollErr) => {
-        throw pollErr; // Real poll errors (failed status, timeout) bubble up
+        throw pollErr;
       });
 
     } catch (err: any) {
