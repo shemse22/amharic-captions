@@ -5,7 +5,7 @@
       "maxDuration": 300
     },
     "/api/export": {
-      "maxDuration": 300
+      "maxDuration": 1800
     },
     "/api/export/diagnose": {},
     "/api/exports/[filename]": {},

@@ -34,6 +34,50 @@ interface TrustedBrand {
   borderColor?: string;
 }
 
+interface ShowcaseItem {
+  id: string;
+  src: string;
+  title: string;
+  amharicTitle: string;
+  badge: string;
+  badgeColor: string;
+}
+
+const SHOWCASE_VIDEOS: ShowcaseItem[] = [
+  {
+    id: 'laura-2',
+    src: '/showcase-1.mp4',
+    title: 'Laura 2',
+    amharicTitle: 'ሎራ 2 • ፖፕአፕ ቦክስ',
+    badge: 'Popular',
+    badgeColor: 'from-[#0062FF] to-[#256E96] text-white',
+  },
+  {
+    id: 'kendrick',
+    src: '/showcase-2.mp4',
+    title: 'Kendrick',
+    amharicTitle: 'ኬንድሪክ • ባለሁለት ከለር',
+    badge: 'Trending',
+    badgeColor: 'from-[#A6056F] to-[#ECCC6E] text-white',
+  },
+  {
+    id: 'hormozi',
+    src: '/showcase-3.mp4',
+    title: 'Hormozi',
+    amharicTitle: 'ሆርሞዚ • ቫይራል ቦክስ',
+    badge: 'Viral',
+    badgeColor: 'from-amber-500 to-orange-500 text-white',
+  },
+  {
+    id: 'beast',
+    src: '/showcase-4.mp4',
+    title: 'Beast',
+    amharicTitle: 'ቢስት • ቃላት በቃላት',
+    badge: 'Classic',
+    badgeColor: 'from-purple-600 to-indigo-600 text-white',
+  },
+];
+
 const TRUSTED_BRANDS: TrustedBrand[] = [
   {
     name: 'Bigel 2.0',
@@ -328,20 +372,73 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Sample Subtitle Preview */}
-          <div className="max-w-4xl mx-auto pt-10">
-            <div className="rounded-3xl bg-white dark:bg-[#131924] border border-[#256E96]/20 dark:border-[#256E96]/35 p-4 sm:p-6 shadow-xl">
-              <h2 className="mb-4 text-center text-sm sm:text-base font-black text-[#632450] dark:text-[#ECCC6E]">
-                Live Animated Subtitle Preview
+          {/* 4-iPhone Showcase: Seamless background, GIF autoloop, full responsive */}
+          <div className="max-w-6xl mx-auto pt-10 sm:pt-14">
+            <div className="text-center space-y-2 mb-6 sm:mb-8">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0062FF]/10 dark:bg-[#0062FF]/20 border border-[#0062FF]/20 text-[#0062FF] dark:text-[#60a5fa] text-xs font-bold tracking-wide">
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>የቫይራል አማርኛ ንዑስ ርዕሶች ቅድመ እይታ</span>
+              </div>
+              <h2 className="text-xl sm:text-3xl font-black text-[#632450] dark:text-[#ECCC6E] tracking-tight">
+                Live Animated Subtitle Showcase
               </h2>
-              <video
-                src="/sample-video.mp4"
-                poster="/preview_card_left.jpg"
-                controls
-                playsInline
-                preload="metadata"
-                className="mx-auto w-full max-w-3xl aspect-video rounded-2xl bg-black object-contain"
-              />
+              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-geez max-w-lg mx-auto">
+                ለቲክቶክ፣ ሪልስ እና ዩቲዩብ ሾርትስ በሰከንዶች ውስጥ የሚዘጋጁ ምርጥ የአማርኛ ንዑስ ርዕስ ዲዛይኖች
+              </p>
+            </div>
+
+            {/* 4 iPhone Grid (2 cols mobile, 4 cols desktop) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-7 items-start">
+              {SHOWCASE_VIDEOS.map((item) => (
+                <div key={item.id} className="flex flex-col items-center group w-full">
+                  {/* iPhone Chassis Frame */}
+                  <div className="relative w-full max-w-[260px] aspect-[9/18.5] rounded-[32px] sm:rounded-[42px] p-2 sm:p-2.5 bg-gradient-to-b from-neutral-800 via-neutral-900 to-black shadow-xl shadow-black/20 ring-1 ring-white/20 dark:ring-white/10 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-10px_rgba(0,98,255,0.3)]">
+                    
+                    {/* Top Dynamic Island Notch */}
+                    <div className="absolute top-3.5 sm:top-4 left-1/2 -translate-x-1/2 w-16 sm:w-20 h-3.5 sm:h-4 bg-black rounded-full z-30 flex items-center justify-end pr-1.5 shadow-sm ring-1 ring-white/10 pointer-events-none">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#0a1a35] border border-blue-900/60" />
+                    </div>
+
+                    {/* Inner Screen */}
+                    <div className="relative w-full h-full rounded-[24px] sm:rounded-[34px] overflow-hidden bg-neutral-950 flex items-center justify-center">
+                      <video
+                        src={item.src}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                        ref={(el) => {
+                          if (el) {
+                            el.muted = true;
+                            el.play().catch(() => {});
+                          }
+                        }}
+                        className="w-full h-full object-cover select-none pointer-events-none scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
+                      />
+
+                      {/* Glass Glare Highlight */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/15 z-10" />
+
+                      {/* Bottom Home Indicator Bar */}
+                      <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 w-16 sm:w-22 h-1 bg-white/45 rounded-full z-20 backdrop-blur-xs" />
+                    </div>
+                  </div>
+
+                  {/* Caption Style Label */}
+                  <div className="mt-3 text-center space-y-0.5">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-100">{item.title}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-gradient-to-r ${item.badgeColor} font-sans`}>
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 font-geez">
+                      {item.amharicTitle}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
