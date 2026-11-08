@@ -33,8 +33,8 @@ app.prepare()
       }
     });
 
-    // 10-minute timeout for AI transcription and video export operations
-    server.timeout = 600000;
+    // 15-minute timeout for AI transcription and video export operations
+    server.timeout = 900000;
     server.keepAliveTimeout = 120000;
     server.headersTimeout = 125000;
 

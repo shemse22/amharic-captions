@@ -272,11 +272,11 @@ class InMemoryDB {
       id: 1,
       name: 'Telebirr',
       amharicName: 'Telebirr',
-      account: '0944093930',
-      holder: 'Bgern AI / Bgern',
+      account: '0953756775',
+      holder: 'Shemsedin Abate',
       color: 'bg-emerald-600',
       badge: 'Fastest',
-      instruction: 'Send via Telebirr App or *127# to 0944093930 and enter the Transaction Reference (Tx Ref).',
+      instruction: 'Send via Telebirr App or *127# to 0953756775 and enter the Transaction Reference (Tx Ref).',
       isActive: true,
       order: 1,
       createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
@@ -286,11 +286,11 @@ class InMemoryDB {
       id: 2,
       name: 'Commercial Bank of Ethiopia (CBE)',
       amharicName: 'Commercial Bank of Ethiopia (CBE)',
-      account: '100043928174',
-      holder: 'Bgern Captions',
+      account: '1000209324702',
+      holder: 'Shemsedin Abate',
       color: 'bg-purple-700',
       badge: 'CBE Birr / Mobile',
-      instruction: 'Transfer via CBE Birr or CBE Mobile Banking to 100043928174 and enter the transaction code.',
+      instruction: 'Transfer via CBE Birr or CBE Mobile Banking to 1000209324702 and enter the transaction code.',
       isActive: true,
       order: 2,
       createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
@@ -300,11 +300,11 @@ class InMemoryDB {
       id: 3,
       name: 'Bank of Abyssinia (BOA)',
       amharicName: 'Bank of Abyssinia (BOA)',
-      account: '88912401',
-      holder: 'Bgern Media',
+      account: '33045719',
+      holder: 'Shemsedin Abate',
       color: 'bg-amber-600',
       badge: 'Apollo / Mobile',
-      instruction: 'Transfer via Bank of Abyssinia Mobile Banking to 88912401.',
+      instruction: 'Transfer via Bank of Abyssinia Mobile Banking to 33045719.',
       isActive: true,
       order: 3,
       createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
@@ -314,13 +314,27 @@ class InMemoryDB {
       id: 4,
       name: 'Awash Bank',
       amharicName: 'Awash Bank',
-      account: '01304892185200',
-      holder: 'Bgern Tech',
+      account: '01425137466500',
+      holder: 'Shemsedin Abate',
       color: 'bg-blue-600',
       badge: 'Direct Pay',
-      instruction: 'Transfer via Awash Bank App to 01304892185200.',
+      instruction: 'Transfer via Awash Bank App to 01425137466500.',
       isActive: true,
       order: 4,
+      createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+    },
+    {
+      id: 5,
+      name: 'MPessa',
+      amharicName: 'MPessa',
+      account: '0715359665',
+      holder: 'Shemsedin',
+      color: '#0062FF',
+      badge: 'Active',
+      instruction: '',
+      isActive: true,
+      order: 5,
       createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
       updatedAt: new Date(Date.now() - 86400000 * 30).toISOString(),
     },
@@ -373,7 +387,29 @@ class InMemoryDB {
         }
         if (data.payments && Array.isArray(data.payments)) this.payments = data.payments;
         if (data.videos && Array.isArray(data.videos)) this.videos = data.videos;
-        if (data.paymentMethods && Array.isArray(data.paymentMethods)) this.paymentMethods = data.paymentMethods;
+        if (data.paymentMethods && Array.isArray(data.paymentMethods)) {
+          let updatedMethods = false;
+          this.paymentMethods = data.paymentMethods.map((m: PaymentMethodRecord) => {
+            if (m.account === '0944093930' || m.holder === 'Bgern AI / Bgern') {
+              updatedMethods = true;
+              return { ...m, account: '0953756775', holder: 'Shemsedin Abate' };
+            }
+            if (m.account === '100043928174' || m.holder === 'Bgern Captions') {
+              updatedMethods = true;
+              return { ...m, account: '1000209324702', holder: 'Shemsedin Abate' };
+            }
+            if (m.account === '88912401' || m.holder === 'Bgern Media') {
+              updatedMethods = true;
+              return { ...m, account: '33045719', holder: 'Shemsedin Abate' };
+            }
+            if (m.account === '01304892185200' || m.holder === 'Bgern Tech') {
+              updatedMethods = true;
+              return { ...m, account: '01425137466500', holder: 'Shemsedin Abate' };
+            }
+            return m;
+          });
+          if (updatedMethods) this.save();
+        }
         if (data.blogPosts && Array.isArray(data.blogPosts)) this.blogPosts = data.blogPosts;
         if (data.notifications && Array.isArray(data.notifications)) this.notifications = data.notifications;
         if (data.passwordResets && Array.isArray(data.passwordResets)) this.passwordResets = data.passwordResets;
@@ -970,7 +1006,7 @@ export const dbService = {
             screenshotPath: row.screenshotPath || undefined,
             status: row.status as any,
             minutesCredited: row.minutesCredited,
-            creditsCredited: row.creditsCredited || row.minutesCredited * 30000,
+            creditsCredited: row.creditsCredited || row.minutesCredited * 3000,
             createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
           }));
         }
@@ -1006,7 +1042,7 @@ export const dbService = {
             screenshotPath: row.screenshotPath || undefined,
             status: row.status as any,
             minutesCredited: row.minutesCredited,
-            creditsCredited: row.creditsCredited || row.minutesCredited * 30000,
+            creditsCredited: row.creditsCredited || row.minutesCredited * 3000,
             createdAt: row.createdAt?.toISOString?.() || new Date().toISOString(),
           };
         }

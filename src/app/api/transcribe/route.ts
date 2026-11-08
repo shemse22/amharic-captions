@@ -12,7 +12,7 @@ import { getLocalTempFilePath } from "@/lib/temp-dir";
 
 const execFileAsync = promisify(execFile);
 
-export const maxDuration = 600; // Allow up to 10 minutes for speech recognition
+export const maxDuration = 900; // Allow up to 15 minutes for speech recognition
 export const dynamic = "force-dynamic";
 
 type CaptionSegment = {
@@ -220,9 +220,9 @@ function uploadBufferToS3(s3Url: string, buffer: Buffer, contentType: string): P
     const timer = setTimeout(() => {
       if (isDone) return;
       isDone = true;
-      try { req.destroy(new Error("S3 upload timed out after 180 seconds")); } catch {}
-      reject(new Error("S3 upload timed out after 180 seconds"));
-    }, 180000);
+      try { req.destroy(new Error("S3 upload timed out after 300 seconds")); } catch {}
+      reject(new Error("S3 upload timed out after 300 seconds"));
+    }, 300000);
 
     req.on("error", (err) => {
       if (isDone) return;
@@ -296,8 +296,8 @@ async function extractSpeechAudio(
         if (isDone) return;
         isDone = true;
         try { proc.kill("SIGKILL"); } catch {}
-        reject(new Error("Audio extraction timed out after 180 seconds"));
-      }, 180000);
+        reject(new Error("Audio extraction timed out after 300 seconds"));
+      }, 300000);
 
       proc.stderr.on("data", (data: Buffer) => {
         stderr = `${stderr}${data.toString()}`.slice(-4000);
@@ -508,7 +508,7 @@ async function transcribeWithHasab(
 
   let completedItem: any = null;
   const startTime = Date.now();
-  const maxWaitMs = 300000; // Allow up to 5 minutes for Hasab processing
+  const maxWaitMs = 600000; // Allow up to 10 minutes for Hasab processing
   let pollIteration = 0;
 
   while (Date.now() - startTime < maxWaitMs) {
@@ -629,7 +629,7 @@ Guidelines:
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(300000),
       });
 
       if (!response.ok) {
@@ -984,6 +984,7 @@ export async function POST(req: Request) {
       const sourceDurationSec = actualServerDurationSec > 0 ? actualServerDurationSec : Math.max(durationFromBody, maxSegmentTime, 1);
       const durationSec = Math.max(1, Math.ceil(sourceDurationSec));
       const minutesUsed = Number((durationSec / 60).toFixed(2));
+      const creditsToDeduct = Math.max(1, Math.ceil(durationSec / 60)) * 3000;
       const remainingMinutes = Math.max(0, Number((user.minutes_balance || 0) - minutesUsed));
 
       if (minutesUsed > (user.minutes_balance || 0)) {
@@ -1000,9 +1001,9 @@ export async function POST(req: Request) {
         );
       }
 
-      console.log(`[Balance Deduction] Deducting for user ${user.email} (ID: ${user.id}): duration ${durationSec}s -> -${minutesUsed} min. Previous balance: ${user.minutes_balance} minutes, ${user.credits} credits.`);
+      console.log(`[Balance Deduction] Deducting for user ${user.email} (ID: ${user.id}): duration ${durationSec}s -> -${minutesUsed} min, -${creditsToDeduct} credits. Previous balance: ${user.minutes_balance} minutes, ${user.credits} credits.`);
 
-      const updatedUser = await dbService.updateUserCredits(user.id, 0, -minutesUsed);
+      const updatedUser = await dbService.updateUserCredits(user.id, -creditsToDeduct, -minutesUsed);
       if (updatedUser) {
         const totalGranted = dbService.getUserTotalCreditsGranted(updatedUser);
         const usedCredits = Math.max(0, totalGranted - updatedUser.credits);
@@ -1022,7 +1023,7 @@ export async function POST(req: Request) {
           minutes: updatedUser.minutes_balance,
           credits: updatedUser.credits,
           deductedMinutes: minutesUsed,
-          deductedCredits: 0,
+          deductedCredits: creditsToDeduct,
           durationSec: durationSec,
           totalGranted,
           usedPercent,

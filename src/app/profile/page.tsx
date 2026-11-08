@@ -90,6 +90,18 @@ export default function ProfilePage() {
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState('');
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>(OFFICIAL_PAYMENT_ACCOUNTS);
+
+  useEffect(() => {
+    fetch('/api/payment-methods')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.methods && data.methods.length > 0) {
+          setPaymentAccounts(data.methods);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!screenshotPreview) return;
@@ -1389,40 +1401,44 @@ export default function ProfilePage() {
                   <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">100% Secure & Verified</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {PAYMENT_ACCOUNTS.map((acc: PaymentAccount) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {paymentAccounts.map((acc: PaymentAccount) => (
                     <div
                       key={acc.name}
-                      className="p-3.5 rounded-xl bg-white dark:bg-[#131924] border border-[#256E96]/20 dark:border-[#256E96]/35 space-y-2 relative group hover:border-[#0062FF]/40 transition-all shadow-xs"
+                      className="p-3.5 rounded-2xl bg-white dark:bg-[#131924] border border-[#256E96]/20 dark:border-[#256E96]/35 flex items-center justify-between gap-3 text-xs hover:border-[#0062FF]/40 transition-all shadow-xs"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-extrabold text-neutral-900 dark:text-white truncate max-w-[140px]">
-                          {acc.name}
-                        </span>
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-300">
-                          {acc.badge}
-                        </span>
+                      <div className="space-y-1 min-w-0">
+                        <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold">{acc.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#0062FF]/10 text-[#0062FF] dark:bg-white/10 dark:text-neutral-300 font-bold">
+                            {acc.badge}
+                          </span>
+                        </div>
+                        <div className="font-mono text-[#0062FF] dark:text-[#ECCC6E] font-bold text-sm tracking-wider select-all">
+                          {acc.account}
+                        </div>
+                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                          ስም (Name): <span className="font-bold text-neutral-800 dark:text-neutral-200">{acc.holder}</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-1 font-mono text-xs text-[#0062FF] dark:text-[#ECCC6E] font-bold">
-                        <span className="tracking-wider select-all">{acc.account}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyAccount(acc.account)}
-                          className="p-2 rounded bg-neutral-100 hover:bg-[#0062FF] hover:text-white dark:bg-neutral-800 dark:hover:bg-[#0062FF] text-neutral-500 dark:text-neutral-400 transition-all"
-                          title="Copy Account Number"
-                        >
-                          {copiedAccount === acc.account ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
-                        ስም: {acc.holder}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAccount(acc.account)}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0062FF] to-[#A6056F] hover:from-[#0052d9] hover:to-[#8d045e] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 shrink-0"
+                      >
+                        {copiedAccount === acc.account ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-white" />
+                            <span>Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-white" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   ))}
                 </div>

@@ -160,9 +160,36 @@
       "isAdmin": false,
       "role": "USER",
       "createdAt": "2026-09-17T20:22:02.322Z"
+    },
+    {
+      "id": 16,
+      "name": "shems",
+      "email": "shemsedinabate1@gmail.com",
+      "avatar": "https://unavatar.io/google/shemsedinabate1%40gmail.com?fallback=https%3A%2F%2Fui-avatars.com%2Fapi%2F%3Fname%3Dshems%26background%3D0062FF%26color%3Dfff%26size%3D256%26bold%3Dtrue",
+      "password": "scrypt:8bd700b55dd1cffc47c1a47fd7ed7493:6618043d3a563cb95262305c3bb07cb77a6855069bdb3317ac3fee12caa33b8c6945715f0de03a6340f2398479e44ab0dfb2c9b49b1cef084bab0a4262f456fd",
+      "minutes_balance": 5.44,
+      "credits": 297000,
+      "isAdmin": false,
+      "role": "USER",
+      "createdAt": "2026-11-08T03:38:04.396Z"
     }
   ],
   "payments": [
+    {
+      "id": 12,
+      "userId": 16,
+      "userEmail": "shemsedinabate1@gmail.com",
+      "userName": "shems",
+      "planName": "PLUS",
+      "amountEtb": 150,
+      "transactionRef": "TB-REC-949357-2260",
+      "paymentMethod": "TELEBIRR_MANUAL",
+      "screenshotPath": "/uploads/1794113947294_payment_receipt.jpg",
+      "status": "pending",
+      "minutesCredited": 5,
+      "creditsCredited": 15000,
+      "createdAt": "2026-11-08T04:59:09.357Z"
+    },
     {
       "id": 11,
       "userId": 3,
@@ -324,7 +351,46 @@
       "createdAt": "2026-09-12T22:21:24.908Z"
     }
   ],
-  "videos": [],
+  "videos": [
+    {
+      "id": 67,
+      "userId": 16,
+      "userEmail": "shemsedinabate1@gmail.com",
+      "title": "imo app_1080p (1).mp4",
+      "videoUrl": "/uploads/1794113862342_imo_app_1080p__1_.mp4",
+      "durationSec": 42,
+      "subtitlesJson": "[{\"id\":1,\"start\":0.5,\"end\":5.96,\"text\":\"ሰላም ጤና ይስጥልኝ welcome to my video\"},{\"id\":2,\"start\":6.36,\"end\":11.82,\"text\":\"ብገርን AI captions በሰከንዶች ውስጥ ያዘጋጃል\"},{\"id\":3,\"start\":12.21,\"end\":17.67,\"text\":\"ለ TikTok እና YouTube Shorts ምርጥ tool ነው\"},{\"id\":4,\"start\":18.07,\"end\":23.53,\"text\":\"Like እና Subscribe ማድረግ እንዳይረሱ\"},{\"id\":5,\"start\":23.93,\"end\":29.39,\"text\":\"አሁኑኑ በብገርን ስቱዲዮ ቪዲዮዎን ያሳምሩ 🔥\"},{\"id\":6,\"start\":29.79,\"end\":35.25,\"text\":\"የአማርኛ እና English ድምፅን በቀላሉ ይለውጣል\"},{\"id\":7,\"start\":35.64,\"end\":41.1,\"text\":\"ከፍተኛ ጥራት ያለው MP4 ቪዲዮ ያውርዱ\"}]",
+      "status": "APPROVED",
+      "createdAt": "2026-11-08T04:57:42.496Z",
+      "updatedAt": "2026-11-08T04:58:12.761Z",
+      "expiresAt": "2026-11-15T04:57:42.496Z"
+    },
+    {
+      "id": 66,
+      "userId": 16,
+      "userEmail": "shemsedinabate1@gmail.com",
+      "title": "bgern_export_original_1794053132171.mp4",
+      "videoUrl": "blob:http://localhost:3000/e6ec0d74-1de5-4614-826f-9d02a198c851",
+      "durationSec": 116,
+      "subtitlesJson": "[{\"id\":1,\"start\":2.96,\"end\":3.56,\"text\":\"አባ\"},{\"id\":2,\"start\":4.4,\"end\":5.76,\"text\":\"ብለህ ብለህ ደግሞ የኔን ኮት\"},{\"id\":3,\"start\":5.76,\"end\":6.48,\"text\":\"መልበስ ጀመርክ?\"},{\"id\":4,\"start\":7.04,\"end\":8.72,\"text\":\"ኧረ ጓደኛዬ ኢ ናርዶስ ምርቃት\"},{\"id\":5,\"start\":8.88,\"end\":10.32,\"text\":\"ስለሆነ ነው ዝንጥ ብዬ ልሂሄድ\"},{\"id\":6,\"start\":10.32,\"end\":12.32,\"text\":\"ብዬ እኮ ናርዶስ ናፍዶስ\"},{\"id\":7,\"start\":13.36,\"end\":15.2,\"text\":\"ይቺ አብሮ አደገ ተመረቀች?\"},{\"id\":8,\"start\":15.28,\"end\":16.32,\"text\":\"አዎ ተመረቀችም\"},{\"id\":9,\"start\":17.36,\"end\":18.56,\"text\":\"በላን ጠጣን ጨፈርን\"},{\"id\":10,\"start\":19.44,\"end\":20.04,\"text\":\"ደስ ይል ነበር።\"},{\"id\":11,\"start\":20.08,\"end\":20.72,\"text\":\"በጣም ያበደ\"},{\"id\":12,\"start\":22.56,\"end\":23.68,\"text\":\"መሃል ላይ ብቻ ትንሽ\"},{\"id\":13,\"start\":25.76,\"end\":26.4,\"text\":\"መሃል ላይ ምን?\"},{\"id\":14,\"start\":28.32,\"end\":30.24,\"text\":\"ጠረጴዛ ላይ የነበረ የወንድሟን ስልክ\"},{\"id\":15,\"start\":30.32,\"end\":30.96,\"text\":\"ጠፋ ተብሎ\"},{\"id\":16,\"start\":34.08,\"end\":36.24,\"text\":\"እያቦዘነች ደግሞ ከጌታነ ልጅ ውጪ\"},{\"id\":17,\"start\":36.32,\"end\":37.84,\"text\":\"ማንም አወስድማ እና\"},{\"id\":18,\"start\":39.36,\"end\":40,\"text\":\"ወስደሃዋል እንዴ?\"},{\"id\":19,\"start\":40.16,\"end\":40.76,\"text\":\"አንተ\"},{\"id\":20,\"start\":41.44,\"end\":42.08,\"text\":\"ጌታ ነም\"},{\"id\":21,\"start\":43.2,\"end\":44.8,\"text\":\"ያንተ ልጅ በሰው ደስታ ይደሰታል\"},{\"id\":22,\"start\":44.96,\"end\":46.08,\"text\":\"እንጂ የሰው ነገር ይወስዳል።\"},{\"id\":23,\"start\":48.48,\"end\":50.08,\"text\":\"ስምህን አስጠራት በዛ ሁሉ ሰው\"},{\"id\":24,\"start\":53.28,\"end\":54.88,\"text\":\"እኔ ለመፈተሽ እቀላልለሁ እንዴ ጌታ\"},{\"id\":25,\"start\":57.04,\"end\":59.12,\"text\":\"ወንድሟ ከዛ ሁሉ ሰው መሃል\"},{\"id\":26,\"start\":60.16,\"end\":61.76,\"text\":\"እኔን መጥተው በድፍረት ፈጠሸኝ።\"},{\"id\":27,\"start\":64.96,\"end\":67.44,\"text\":\"ወዲ አገት እኮ የገዛ ልጁን\"},{\"id\":28,\"start\":67.44,\"end\":69.28,\"text\":\"አቅሎ ወስዶ ለካ ቲክቶክ እያየብህ\"},{\"id\":29,\"start\":69.36,\"end\":69.96,\"text\":\"ነው።\"},{\"id\":30,\"start\":71.68,\"end\":75.76,\"text\":\"በቃ ተዋቸው አልተዋቸውም ተዋቸው አልተዋቸውም\"},{\"id\":31,\"start\":76.72,\"end\":77.52,\"text\":\"አልተዋችሁም?\"},{\"id\":32,\"start\":78.64,\"end\":80,\"text\":\"ጌታን ይሙት አልተዋቸውም፣\"},{\"id\":33,\"start\":81.6,\"end\":83.6,\"text\":\"እኔ ምስኪኑ አባቴ ስም በዛ\"},{\"id\":34,\"start\":83.76,\"end\":86.08,\"text\":\"ሁሉ ሰው መሃል አስነስቼ አልተዋቸውም?\"},{\"id\":35,\"start\":87.12,\"end\":89.44,\"text\":\"የጌታን ልጅ ሌብ አይደለም፣ ለስኬት\"},{\"id\":36,\"start\":89.52,\"end\":90.24,\"text\":\"የተፈጠረ ሰው ነው\"},{\"id\":37,\"start\":91.04,\"end\":91.76,\"text\":\"ሱሰኛ ዝሮ\"},{\"id\":38,\"start\":93.12,\"end\":95.28,\"text\":\"ይሄን ማንነቴን ቀይሬ ጌታ ነ\"},{\"id\":39,\"start\":95.36,\"end\":97.28,\"text\":\"ይሙት አንገትህን እንዳትዘፈውት\"},{\"id\":40,\"start\":98.24,\"end\":98.88,\"text\":\"አሳያችኋለሁ\"},{\"id\":41,\"start\":99.76,\"end\":102.48,\"text\":\"ከሱን እያ አሳያችኋለሁ ተዋቸው አትበል?\"}]",
+      "status": "APPROVED",
+      "createdAt": "2026-11-08T03:38:31.728Z",
+      "updatedAt": "2026-11-08T03:38:46.765Z",
+      "expiresAt": "2026-11-15T03:38:31.728Z"
+    },
+    {
+      "id": 65,
+      "userId": 16,
+      "userEmail": "shemsedinabate1@gmail.com",
+      "title": "bgern_export_original_1794053132171.mp4",
+      "videoUrl": "/uploads/1794109097525_bgern_export_original_1794053132171.mp4",
+      "durationSec": 0,
+      "status": "APPROVED",
+      "createdAt": "2026-11-08T03:38:17.835Z",
+      "updatedAt": "2026-11-08T03:38:17.835Z",
+      "expiresAt": "2026-11-15T03:38:17.835Z"
+    }
+  ],
   "paymentMethods": [
     {
       "id": 1,
@@ -469,6 +535,25 @@
     }
   ],
   "notifications": [
+    {
+      "id": 13,
+      "targetRole": "ADMIN",
+      "type": "PAYMENT_PENDING",
+      "title": "አዲስ የክፍያ ደረሰኝ ገብቷል (New Payment Receipt) 💰",
+      "message": "shems የ 150 ETB ደረሰኝ ለ PLUS (5 ደቂቃ) አስገብቷል። Ref: TB-REC-949357-2260",
+      "data": {
+        "paymentId": 12,
+        "amountEtb": 150,
+        "planName": "PLUS",
+        "minutesCredited": 5,
+        "creditsCredited": 15000,
+        "transactionRef": "TB-REC-949357-2260",
+        "userName": "shems",
+        "userEmail": "shemsedinabate1@gmail.com"
+      },
+      "isRead": false,
+      "createdAt": "2026-11-08T04:59:09.361Z"
+    },
     {
       "id": 12,
       "targetRole": "ADMIN",
@@ -677,10 +762,10 @@
     }
   ],
   "passwordResets": [],
-  "nextUserId": 16,
-  "nextPaymentId": 12,
-  "nextVideoId": 65,
+  "nextUserId": 17,
+  "nextPaymentId": 13,
+  "nextVideoId": 68,
   "nextPaymentMethodId": 6,
   "nextBlogPostId": 4,
-  "nextNotificationId": 13
+  "nextNotificationId": 14
 }
