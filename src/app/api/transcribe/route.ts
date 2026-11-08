@@ -296,8 +296,8 @@ async function extractSpeechAudio(
         if (isDone) return;
         isDone = true;
         try { proc.kill("SIGKILL"); } catch {}
-        reject(new Error("Audio extraction timed out after 60 seconds"));
-      }, 60000);
+        reject(new Error("Audio extraction timed out after 180 seconds"));
+      }, 180000);
 
       proc.stderr.on("data", (data: Buffer) => {
         stderr = `${stderr}${data.toString()}`.slice(-4000);

@@ -1690,12 +1690,12 @@ export default function StudioPage() {
         formData.append('durationSec', String(Math.round(vidDur)));
       }
 
-      // 5-minute client-side timeout: prevents any hanging request while allowing longer audio processing
+      // 10-minute client-side timeout: allows long videos (20+ min) to fully process through audio extraction, upload, and Hasab AI
       const res = await fetch('/api/transcribe', {
         method: 'POST',
         credentials: 'include',
         body: formData,
-        signal: AbortSignal.timeout(300000),
+        signal: AbortSignal.timeout(600000),
       });
 
       let data: any = null;

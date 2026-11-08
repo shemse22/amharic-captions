@@ -19,7 +19,7 @@
       "maxDuration": 180
     },
     "/api/transcribe": {
-      "maxDuration": 300
+      "maxDuration": 600
     }
   }
 }

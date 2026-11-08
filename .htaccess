@@ -1,0 +1,10 @@
+# LiteSpeed Web Server: Disable connection timeout for long-running AI transcription & video export
+<IfModule Litespeed>
+  RewriteEngine On
+  RewriteRule .* - [E=noconntimeout:1,E=noabort:1]
+</IfModule>
+
+<IfModule mod_env.c>
+  SetEnv noabort 1
+  SetEnv noconntimeout 1
+</IfModule>
