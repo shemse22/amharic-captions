@@ -38,36 +38,51 @@ function getJobFilePath(jobId: string): string {
 }
 
 function setExportJob(jobId: string, patch: Partial<ExportJob> & { id?: string }): ExportJob {
-  const existing = activeJobs.get(jobId) || {
-    id: jobId,
-    status: 'processing',
-    progress: 0,
-    createdAt: Date.now(),
-  };
+  // Try disk first so cross-process updates don't clobber each other
+  let existing = activeJobs.get(jobId);
+  if (!existing) {
+    try {
+      const jobPath = getJobFilePath(jobId);
+      if (fs.existsSync(jobPath)) {
+        const parsed = JSON.parse(fs.readFileSync(jobPath, 'utf8')) as ExportJob;
+        if (parsed && parsed.id) existing = parsed;
+      }
+    } catch {}
+  }
+  if (!existing) {
+    existing = { id: jobId, status: 'processing', progress: 0, createdAt: Date.now() };
+  }
   const updated: ExportJob = { ...existing, ...patch, id: jobId };
   activeJobs.set(jobId, updated);
 
+  // Write to disk atomically via temp-file rename where supported, else direct write
   try {
     const jobPath = getJobFilePath(jobId);
-    fs.writeFileSync(jobPath, JSON.stringify(updated), 'utf8');
-  } catch {}
+    const tmpPath = jobPath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(updated), 'utf8');
+    fs.renameSync(tmpPath, jobPath);
+  } catch {
+    try {
+      fs.writeFileSync(getJobFilePath(jobId), JSON.stringify(updated), 'utf8');
+    } catch {}
+  }
 
   return updated;
 }
 
 function getExportJob(jobId: string): ExportJob | null {
-  const inMem = activeJobs.get(jobId);
   try {
     const jobPath = getJobFilePath(jobId);
     if (fs.existsSync(jobPath)) {
       const parsed = JSON.parse(fs.readFileSync(jobPath, 'utf8')) as ExportJob;
       if (parsed && parsed.id) {
+        // Sync to memory so same-process reads are fast
         activeJobs.set(jobId, parsed);
         return parsed;
       }
     }
   } catch {}
-  return inMem || null;
+  return activeJobs.get(jobId) || null;
 }
 
 const cleanupTimer = setInterval(() => {

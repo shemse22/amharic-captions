@@ -426,6 +426,7 @@ export default function StudioPage() {
   const [isBurning, setIsBurning] = useState(false);
   const isBurningRef = useRef<boolean>(false);
   const [burnProgress, setBurnProgress] = useState(0);
+  const [burnElapsed, setBurnElapsed] = useState(0); // seconds since export started
   const [exportError, setExportError] = useState<{ message: string; details: string } | null>(null);
   const [exportComplete, setExportComplete] = useState<string | null>(null);
   const [exportDetailsCopied, setExportDetailsCopied] = useState(false);
@@ -1197,6 +1198,19 @@ export default function StudioPage() {
   useEffect(() => {
     activeSoloClipRef.current = activeSoloClip;
   }, [activeSoloClip]);
+
+  // Elapsed timer — ticks every second while exporting so user sees activity
+  useEffect(() => {
+    if (!isBurning) {
+      setBurnElapsed(0);
+      return;
+    }
+    setBurnElapsed(0);
+    const timer = setInterval(() => {
+      setBurnElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isBurning]);
 
   // Video Time Update & Subtitle Tracking
   useEffect(() => {
@@ -2217,45 +2231,68 @@ export default function StudioPage() {
       }
     };
 
-    // Polling helper: runs concurrently to guarantee live progress even if SSE is buffered by proxies
+    // Primary progress mechanism: poll /api/export?jobId=... every 2s
+    // This is the ONLY reliable method on cPanel where Apache buffers SSE streams.
+    // Returns when: job completed, job failed, cancel requested, or 5-min timeout.
     const pollExportJob = async (jobId: string): Promise<boolean> => {
       const pollStart = Date.now();
       const maxPollMs = 300000; // 5 minutes max
       let consecutive404 = 0;
+      let lastProgress = 0;
 
       while (Date.now() - pollStart < maxPollMs && isBurningRef.current && !exportSucceeded) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 2000));
         if (!isBurningRef.current || exportSucceeded) break;
 
         try {
-          const pollRes = await fetch(`/api/export?jobId=${encodeURIComponent(jobId)}`);
+          const pollRes = await fetch(`/api/export?jobId=${encodeURIComponent(jobId)}`, {
+            headers: { 'Cache-Control': 'no-cache' },
+          });
+
           if (pollRes.status === 404) {
             consecutive404++;
-            if (consecutive404 >= 4) {
-              throw new Error('Export job was cancelled or not found on the server.');
+            // Job not found 3x in a row = server never started it
+            if (consecutive404 >= 3) {
+              throw new Error('Export job not found on server. The video file may be missing. Please re-upload your video and try again.');
             }
             continue;
           }
           consecutive404 = 0;
 
-          if (pollRes.ok) {
-            const jobData = await pollRes.json();
-            if (jobData.status === 'processing') {
-              if (typeof jobData.progress === 'number' && jobData.progress > 0) {
-                setBurnProgress(Math.max(5, Math.min(99, jobData.progress)));
-              }
-            } else if (jobData.status === 'completed' && jobData.downloadUrl) {
-              triggerDownload(jobData.downloadUrl, jobData.fileName);
-              return true;
-            } else if (jobData.status === 'failed') {
-              throw new Error(jobData.error || 'Server video export failed.');
+          if (!pollRes.ok) {
+            // Non-404 error — wait and retry
+            continue;
+          }
+
+          const jobData = await pollRes.json();
+          if (jobData.status === 'processing') {
+            const prog = typeof jobData.progress === 'number' ? jobData.progress : 0;
+            if (prog > lastProgress) {
+              lastProgress = prog;
+              setBurnProgress(Math.max(5, Math.min(99, prog)));
+            } else if (prog === 0 && Date.now() - pollStart > 15000) {
+              // Still at 0% after 15s — show a fake animation so user knows it's running
+              const fakeProgress = Math.min(30, Math.round((Date.now() - pollStart) / 1000));
+              setBurnProgress(Math.max(lastProgress, fakeProgress));
             }
+          } else if (jobData.status === 'completed' && jobData.downloadUrl) {
+            triggerDownload(jobData.downloadUrl, jobData.fileName);
+            return true;
+          } else if (jobData.status === 'failed') {
+            const errMsg = jobData.error || 'Server video export failed.';
+            throw new Error(errMsg);
           }
         } catch (pollErr: any) {
-          if (pollErr.message && !pollErr.message.includes('fetch') && !pollErr.message.includes('network')) {
+          const msg = pollErr?.message || '';
+          // Rethrow real errors (not transient network/fetch errors)
+          if (msg && !msg.toLowerCase().includes('fetch') && !msg.toLowerCase().includes('network') && !msg.toLowerCase().includes('failed to fetch')) {
             throw pollErr;
           }
         }
+      }
+
+      if (!exportSucceeded && isBurningRef.current) {
+        throw new Error('Export timed out. The video may still be processing — check back in a minute.');
       }
       return exportSucceeded;
     };
@@ -2373,63 +2410,71 @@ export default function StudioPage() {
         }
       }
 
-      // 2. Start background polling concurrently to handle proxy-buffered SSE streams
-      pollExportJob(exportJobId).catch((pollErr) => {
-        if (!exportSucceeded && isBurningRef.current) {
-          console.warn('Background poller notification:', pollErr);
-        }
-      });
+      // 2. PRIMARY: Poll for progress (works even when Apache buffers SSE).
+      //    Also attempt to read SSE if available, whichever resolves first wins.
+      const pollPromise = pollExportJob(exportJobId);
 
-      // 3. Process SSE stream
-      if (response.body) {
+      // 3. SECONDARY: Try SSE stream in parallel (may be fully buffered on cPanel)
+      const ssePromise = (async () => {
+        if (!response.body) return;
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let streamBuffer = '';
 
-        while (!exportSucceeded && isBurningRef.current) {
-          const { value, done } = await reader.read();
-          if (done) break;
+        try {
+          while (!exportSucceeded && isBurningRef.current) {
+            // SSE read with 30s timeout — if no data in 30s, assume Apache is buffering
+            const readResult = await Promise.race([
+              reader.read(),
+              new Promise<{ value: undefined; done: true }>((resolve) =>
+                setTimeout(() => resolve({ value: undefined, done: true as const }), 30000)
+              ),
+            ]);
+            if (readResult.done || !readResult.value) break;
 
-          streamBuffer += decoder.decode(value, { stream: true });
-          const events = streamBuffer.split('\n\n');
-          streamBuffer = events.pop() || '';
+            streamBuffer += decoder.decode(readResult.value, { stream: true });
+            const events = streamBuffer.split('\n\n');
+            streamBuffer = events.pop() || '';
 
-          for (const evt of events) {
-            const trimmed = evt.trim();
-            if (!trimmed.startsWith('data:')) continue;
-            const jsonStr = trimmed.slice(5).trim();
-            if (!jsonStr) continue;
+            for (const evt of events) {
+              const trimmed = evt.trim();
+              if (!trimmed.startsWith('data:')) continue;
+              const jsonStr = trimmed.slice(5).trim();
+              if (!jsonStr) continue;
 
-            try {
-              const data = JSON.parse(jsonStr);
-              if (data.type === 'start') {
-                setBurnProgress(5);
-              } else if (data.type === 'progress') {
-                if (typeof data.percent === 'number') {
+              try {
+                const data = JSON.parse(jsonStr);
+                if (data.type === 'start') {
+                  setBurnProgress((p) => Math.max(p, 5));
+                } else if (data.type === 'progress' && typeof data.percent === 'number') {
                   setBurnProgress(Math.max(5, Math.min(99, data.percent)));
+                } else if (data.type === 'complete') {
+                  triggerDownload(data.downloadUrl, data.fileName);
+                  break;
+                } else if (data.type === 'error') {
+                  throw new Error(data.error || 'Server video export failed');
                 }
-              } else if (data.type === 'complete') {
-                triggerDownload(data.downloadUrl, data.fileName);
-                break;
-              } else if (data.type === 'error') {
-                throw new Error(data.error || 'Server video export failed');
-              }
-            } catch (parseErr: any) {
-              if (parseErr.message && !parseErr.message.includes('JSON')) {
-                throw parseErr;
+              } catch (parseErr: any) {
+                if (parseErr.message && !parseErr.message.includes('JSON')) throw parseErr;
               }
             }
           }
+        } finally {
+          try { reader.cancel(); } catch {}
         }
-      }
+      })();
 
-      // If SSE closed but job is still finalizing on server, wait on poller
-      if (!exportSucceeded && isBurningRef.current) {
-        const ok = await pollExportJob(exportJobId);
-        if (!ok && !exportSucceeded) {
-          throw new Error('Video export ended without receiving output file.');
-        }
-      }
+      // Wait for whichever finishes first; ignore SSE errors (poller is authoritative)
+      await Promise.race([
+        pollPromise.then(() => {}),
+        ssePromise.catch(() => {}),
+      ]);
+
+      // If poll didn't trigger download, wait for it to fully complete
+      await pollPromise.catch((pollErr) => {
+        throw pollErr; // Real poll errors (failed status, timeout) bubble up
+      });
+
     } catch (err: any) {
       console.error('Server export error:', err);
       setExportError({
@@ -5667,7 +5712,7 @@ export default function StudioPage() {
 
             <div>
               <h3 className="text-base font-bold text-neutral-900 dark:text-white">
-                {burnProgress >= 98 ? 'Validating export…' : burnProgress >= 90 ? 'Finalizing MP4 file…' : 'ቪዲዮውን በማዘጋጀት ላይ...'}
+                {burnProgress >= 98 ? 'Validating export…' : burnProgress >= 90 ? 'Finalizing MP4 file…' : burnProgress >= 5 ? 'ቪዲዮውን በማዘጋጀት ላይ...' : 'Connecting to server…'}
               </h3>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 Server-side FFmpeg rendering • Quality: <span className="font-semibold text-[#0062FF]">{exportQuality.toUpperCase()}</span>
@@ -5675,18 +5720,28 @@ export default function StudioPage() {
               <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
                 Burning Noto Sans Ethiopic captions at constant 30fps (CFR)
               </p>
+              {burnElapsed > 10 && burnProgress <= 5 && (
+                <p className="text-[11px] text-amber-500 mt-1 font-semibold animate-pulse">
+                  ⏳ Processing on server… ({burnElapsed}s elapsed)
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <div className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className="bg-[#0062FF] h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.max(4, burnProgress)}%` }}
-                />
+                {burnProgress <= 2 ? (
+                  /* Indeterminate animation while waiting for server */
+                  <div className="h-2.5 rounded-full bg-[#0062FF] animate-pulse w-1/3 ml-auto mr-auto" />
+                ) : (
+                  <div
+                    className="bg-[#0062FF] h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(4, burnProgress)}%` }}
+                  />
+                )}
               </div>
               <div className="flex justify-between text-xs font-mono text-neutral-500 dark:text-neutral-400 px-1">
-                <span>Progress</span>
-                <span className="font-bold text-neutral-900 dark:text-white">{burnProgress}%</span>
+                <span>{burnElapsed > 0 ? `${Math.floor(burnElapsed / 60)}:${String(burnElapsed % 60).padStart(2, '0')}` : 'Progress'}</span>
+                <span className="font-bold text-neutral-900 dark:text-white">{burnProgress <= 2 ? '…' : `${burnProgress}%`}</span>
               </div>
             </div>
 
