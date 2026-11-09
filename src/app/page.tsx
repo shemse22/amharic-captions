@@ -46,11 +46,11 @@ interface ShowcaseItem {
 const SHOWCASE_VIDEOS: ShowcaseItem[] = [
   {
     id: 'laura-2',
-    src: '/showcase-1.mp4',
+    src: '/showcase-4.mp4',
     title: 'Laura 2',
     amharicTitle: 'ሎራ 2 • ፖፕአፕ ቦክስ',
     badge: 'Popular',
-    badgeColor: 'from-[#0062FF] to-[#256E96] text-white',
+    badgeColor: 'bg-[#0062FF] text-white',
   },
   {
     id: 'kendrick',
@@ -58,23 +58,23 @@ const SHOWCASE_VIDEOS: ShowcaseItem[] = [
     title: 'Kendrick',
     amharicTitle: 'ኬንድሪክ • ባለሁለት ከለር',
     badge: 'Trending',
-    badgeColor: 'from-[#A6056F] to-[#ECCC6E] text-white',
+    badgeColor: 'bg-[#FF5A5F] text-white',
   },
   {
     id: 'hormozi',
-    src: '/showcase-3.mp4',
+    src: '/showcase-1.mp4',
     title: 'Hormozi',
     amharicTitle: 'ሆርሞዚ • ቫይራል ቦክስ',
     badge: 'Viral',
-    badgeColor: 'from-amber-500 to-orange-500 text-white',
+    badgeColor: 'bg-[#F59E0B] text-white',
   },
   {
     id: 'beast',
-    src: '/showcase-4.mp4',
+    src: '/showcase-3.mp4',
     title: 'Beast',
     amharicTitle: 'ቢስት • ቃላት በቃላት',
     badge: 'Classic',
-    badgeColor: 'from-purple-600 to-indigo-600 text-white',
+    badgeColor: 'bg-[#4F46E5] text-white',
   },
 ];
 
@@ -341,66 +341,21 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Primary Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <button
-              onClick={handleLaunchStudio}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] font-extrabold text-base shadow-xl shadow-[#14213D]/25 transition-all flex items-center justify-center gap-2 group active:scale-95 cursor-pointer"
-            >
-              <span>{currentUser ? 'Open Caption Studio' : 'Start Free with Gmail'}</span>
-              <ArrowRight className="w-5 h-5 text-[#FCA311] group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <a
-              href="/pricing"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-[#E5E5E5]/50 dark:bg-[#131924] dark:hover:bg-[#1a2230] border border-[#E5E5E5] dark:border-neutral-700 text-[#14213D] dark:text-[#FFFFFF] font-bold text-base transition-all shadow-xs cursor-pointer"
-            >
-              View ETB Plans (ከ50 ብር ጀምሮ)
-            </a>
-          </div>
-
-          {/* Trust Highlights */}
-          <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-neutral-600 dark:text-neutral-300 font-medium">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> 10 Free Minutes on Signup
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> 1080p & 720p Video Burning
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> Telebirr & CBE Supported
-            </div>
-          </div>
-
-          {/* 4-iPhone Showcase: Seamless background, GIF autoloop, full responsive */}
-          <div className="max-w-6xl mx-auto pt-10 sm:pt-14">
-            <div className="text-center space-y-2 mb-6 sm:mb-8">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0062FF]/10 dark:bg-[#0062FF]/20 border border-[#0062FF]/20 text-[#0062FF] dark:text-[#60a5fa] text-xs font-bold tracking-wide">
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>የቫይራል አማርኛ ንዑስ ርዕሶች ቅድመ እይታ</span>
-              </div>
-              <h2 className="text-xl sm:text-3xl font-black text-[#632450] dark:text-[#ECCC6E] tracking-tight">
-                Live Animated Subtitle Showcase
-              </h2>
-              <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 font-geez max-w-lg mx-auto">
-                ለቲክቶክ፣ ሪልስ እና ዩቲዩብ ሾርትስ በሰከንዶች ውስጥ የሚዘጋጁ ምርጥ የአማርኛ ንዑስ ርዕስ ዲዛይኖች
-              </p>
-            </div>
-
-            {/* 4 iPhone Grid (2 cols mobile, 4 cols desktop) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-7 items-start">
+          {/* 4-iPhone Showcase: Immediately below hero header, matching exact screenshot */}
+          <div className="max-w-6xl mx-auto pt-4 sm:pt-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 items-start">
               {SHOWCASE_VIDEOS.map((item) => (
                 <div key={item.id} className="flex flex-col items-center group w-full">
                   {/* iPhone Chassis Frame */}
-                  <div className="relative w-full max-w-[260px] aspect-[9/18.5] rounded-[32px] sm:rounded-[42px] p-2 sm:p-2.5 bg-gradient-to-b from-neutral-800 via-neutral-900 to-black shadow-xl shadow-black/20 ring-1 ring-white/20 dark:ring-white/10 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-10px_rgba(0,98,255,0.3)]">
+                  <div className="relative w-full max-w-[270px] aspect-[9/18.5] rounded-[38px] sm:rounded-[50px] p-2 sm:p-2.5 bg-black border-[7px] sm:border-[9px] border-black shadow-[0_22px_55px_rgba(0,0,0,0.32)] transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_28px_65px_-10px_rgba(0,98,255,0.35)]">
                     
                     {/* Top Dynamic Island Notch */}
-                    <div className="absolute top-3.5 sm:top-4 left-1/2 -translate-x-1/2 w-16 sm:w-20 h-3.5 sm:h-4 bg-black rounded-full z-30 flex items-center justify-end pr-1.5 shadow-sm ring-1 ring-white/10 pointer-events-none">
+                    <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 w-16 sm:w-20 h-3.5 sm:h-4.5 bg-black rounded-full z-30 flex items-center justify-end pr-1.5 shadow-sm ring-1 ring-white/10 pointer-events-none">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#0a1a35] border border-blue-900/60" />
                     </div>
 
                     {/* Inner Screen */}
-                    <div className="relative w-full h-full rounded-[24px] sm:rounded-[34px] overflow-hidden bg-neutral-950 flex items-center justify-center">
+                    <div className="relative w-full h-full rounded-[26px] sm:rounded-[38px] overflow-hidden bg-black flex items-center justify-center">
                       <video
                         src={item.src}
                         autoPlay
@@ -418,7 +373,7 @@ export default function HomePage() {
                       />
 
                       {/* Glass Glare Highlight */}
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/15 z-10" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 z-10" />
 
                       {/* Bottom Home Indicator Bar */}
                       <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 w-16 sm:w-22 h-1 bg-white/45 rounded-full z-20 backdrop-blur-xs" />
@@ -429,7 +384,7 @@ export default function HomePage() {
                   <div className="mt-3 text-center space-y-0.5">
                     <div className="flex items-center justify-center gap-1.5">
                       <span className="text-xs sm:text-sm font-bold text-neutral-800 dark:text-neutral-100">{item.title}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-gradient-to-r ${item.badgeColor} font-sans`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${item.badgeColor} font-sans shadow-xs`}>
                         {item.badge}
                       </span>
                     </div>
@@ -439,6 +394,37 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Primary Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 sm:pt-10">
+            <button
+              onClick={handleLaunchStudio}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#14213D] hover:bg-[#000000] text-[#FFFFFF] font-extrabold text-base shadow-xl shadow-[#14213D]/25 transition-all flex items-center justify-center gap-2 group active:scale-95 cursor-pointer"
+            >
+              <span>{currentUser ? 'Open Caption Studio' : 'Start Free with Gmail'}</span>
+              <ArrowRight className="w-5 h-5 text-[#FCA311] group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <a
+              href="/pricing"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-[#E5E5E5]/50 dark:bg-[#131924] dark:hover:bg-[#1a2230] border border-[#E5E5E5] dark:border-neutral-700 text-[#14213D] dark:text-[#FFFFFF] font-bold text-base transition-all shadow-xs cursor-pointer"
+            >
+              View ETB Plans (ከ50 ብር ጀምሮ)
+            </a>
+          </div>
+
+          {/* Trust Highlights */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-6 text-xs text-neutral-600 dark:text-neutral-300 font-medium">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> 10 Free Minutes on Signup
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> 1080p & 720p Video Burning
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[#0062FF]" /> Telebirr & CBE Supported
             </div>
           </div>
         </section>

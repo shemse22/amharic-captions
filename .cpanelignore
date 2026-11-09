@@ -2,10 +2,15 @@
 .github
 node_modules
 .next/cache
+.next/cache/*
+.next/dev
+.next/dev/*
 *.tar.gz
 *.zip
+*.log
 tests
 .vscode
 .agents
 .claude
+public/uploads
 public/uploads/*
