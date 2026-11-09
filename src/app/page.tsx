@@ -346,16 +346,16 @@ export default function HomePage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8 items-start">
               {SHOWCASE_VIDEOS.map((item) => (
                 <div key={item.id} className="flex flex-col items-center group w-full">
-                  {/* iPhone Chassis Frame */}
-                  <div className="relative w-full max-w-[270px] aspect-[9/18.5] rounded-[38px] sm:rounded-[50px] p-2 sm:p-2.5 bg-black border-[7px] sm:border-[9px] border-black shadow-[0_22px_55px_rgba(0,0,0,0.32)] transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_28px_65px_-10px_rgba(0,98,255,0.35)]">
+                  {/* iPhone Chassis Frame - Ultra-slim sleek bezel */}
+                  <div className="relative w-full max-w-[270px] aspect-[9/18.5] rounded-[34px] sm:rounded-[44px] p-1 sm:p-1.5 bg-neutral-900 border-[2px] sm:border-[2.5px] border-neutral-700/80 shadow-[0_16px_40px_rgba(0,0,0,0.28)] ring-1 ring-black/40 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_24px_55px_-10px_rgba(0,98,255,0.35)]">
                     
-                    {/* Top Dynamic Island Notch */}
-                    <div className="absolute top-2.5 sm:top-3 left-1/2 -translate-x-1/2 w-16 sm:w-20 h-3.5 sm:h-4.5 bg-black rounded-full z-30 flex items-center justify-end pr-1.5 shadow-sm ring-1 ring-white/10 pointer-events-none">
+                    {/* Top Dynamic Island Notch - Compact & sleek */}
+                    <div className="absolute top-2 sm:top-2.5 left-1/2 -translate-x-1/2 w-14 sm:w-16 h-3 sm:h-3.5 bg-black rounded-full z-30 flex items-center justify-end pr-1 shadow-xs ring-1 ring-white/10 pointer-events-none">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#0a1a35] border border-blue-900/60" />
                     </div>
 
-                    {/* Inner Screen */}
-                    <div className="relative w-full h-full rounded-[26px] sm:rounded-[38px] overflow-hidden bg-black flex items-center justify-center">
+                    {/* Inner Screen - Maximized bezel-less view */}
+                    <div className="relative w-full h-full rounded-[28px] sm:rounded-[38px] overflow-hidden bg-black flex items-center justify-center">
                       <video
                         src={item.src}
                         autoPlay
@@ -376,7 +376,7 @@ export default function HomePage() {
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 z-10" />
 
                       {/* Bottom Home Indicator Bar */}
-                      <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 w-16 sm:w-22 h-1 bg-white/45 rounded-full z-20 backdrop-blur-xs" />
+                      <div className="pointer-events-none absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 w-16 sm:w-20 h-0.5 sm:h-1 bg-white/45 rounded-full z-20 backdrop-blur-xs" />
                     </div>
                   </div>
 
