@@ -13,6 +13,7 @@ const port = rawPort ? (isSocket ? rawPort : parseInt(rawPort, 10)) : 3000;
 
 const app = next({
   dev,
+  dir: __dirname,
   hostname: isSocket ? undefined : hostname,
   port: isSocket ? undefined : port,
 });
