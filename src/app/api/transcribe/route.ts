@@ -6,6 +6,7 @@ import path from "path";
 import { execFile, spawn, spawnSync } from "child_process";
 import { promisify } from "util";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import ffprobeInstaller from "@ffprobe-installer/ffprobe";
 import { getSessionUser, isAdminUser } from "@/lib/auth";
 import { dbService } from "@/lib/db";
 import { getLocalTempFilePath } from "@/lib/temp-dir";
@@ -73,7 +74,10 @@ function getFfmpegBinaryPath(): string {
 
 async function getMediaDurationSeconds(filePath: string): Promise<number> {
   try {
-    const ffprobePath = (ffmpegInstaller as any)?.ffprobePath || "ffprobe";
+    const ffprobePath =
+      process.env.FFPROBE_PATH ||
+      (ffprobeInstaller?.path && fs.existsSync(ffprobeInstaller.path) ? ffprobeInstaller.path : null) ||
+      "ffprobe";
     const { stdout } = await execFileAsync(
       ffprobePath,
       [
@@ -220,9 +224,9 @@ function uploadBufferToS3(s3Url: string, buffer: Buffer, contentType: string): P
     const timer = setTimeout(() => {
       if (isDone) return;
       isDone = true;
-      try { req.destroy(new Error("S3 upload timed out after 300 seconds")); } catch {}
-      reject(new Error("S3 upload timed out after 300 seconds"));
-    }, 300000);
+      try { req.destroy(new Error("S3 upload timed out after 45 seconds")); } catch {}
+      reject(new Error("S3 upload timed out after 45 seconds"));
+    }, 45000);
 
     req.on("error", (err) => {
       if (isDone) return;
@@ -282,7 +286,7 @@ async function extractSpeechAudio(
           "-ar",
           "16000",
           "-b:a",
-          "64k",
+          "32k",
           "-f",
           "mp3",
           tempAudioPath,
@@ -296,8 +300,8 @@ async function extractSpeechAudio(
         if (isDone) return;
         isDone = true;
         try { proc.kill("SIGKILL"); } catch {}
-        reject(new Error("Audio extraction timed out after 300 seconds"));
-      }, 300000);
+        reject(new Error("Audio extraction timed out after 120 seconds"));
+      }, 120000);
 
       proc.stderr.on("data", (data: Buffer) => {
         stderr = `${stderr}${data.toString()}`.slice(-4000);
@@ -374,7 +378,8 @@ function groupWordTimestamps(words: Array<{ start: number; end: number; content?
 async function transcribeWithHasab(
   mediaBlob: Blob,
   filename: string,
-  language: string = "amh"
+  language: string = "amh",
+  maxWaitMs: number = 45000
 ): Promise<{ segments: CaptionSegment[]; rawText: string }> {
   const apiKey = getHasabApiKey();
   if (!apiKey) throw new Error("Hasab API key is not configured.");
@@ -426,7 +431,7 @@ async function transcribeWithHasab(
       expires: "",
       visibility: "private",
     }),
-    signal: AbortSignal.timeout(60000),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!vaporRes.ok) {
@@ -469,7 +474,7 @@ async function transcribeWithHasab(
       Authorization: `Bearer ${apiKey}`,
     },
     body: form,
-    signal: AbortSignal.timeout(120000),
+    signal: AbortSignal.timeout(45000),
   });
 
   const submitData = await submitRes.json().catch(() => ({}));
@@ -508,18 +513,17 @@ async function transcribeWithHasab(
 
   let completedItem: any = null;
   const startTime = Date.now();
-  const maxWaitMs = 600000; // Allow up to 10 minutes for Hasab processing
   let pollIteration = 0;
 
   while (Date.now() - startTime < maxWaitMs) {
     pollIteration++;
-    // First poll after 2s, subsequent polls at 3s intervals to avoid hammering
-    await new Promise((r) => setTimeout(r, pollIteration === 1 ? 2000 : 3000));
+    // Poll quickly (1s first, 1.5s thereafter) so short clips complete without artificial idle lag
+    await new Promise((r) => setTimeout(r, pollIteration === 1 ? 1000 : 1500));
 
     try {
       const itemRes = await fetch(`https://api.hasab.ai/api/v1/audios/${encodeURIComponent(String(audioId))}`, {
         headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(15000),
       });
       if (!itemRes.ok) {
         throw new Error(`Hasab transcription status check failed: HTTP ${itemRes.status}`);
@@ -598,7 +602,7 @@ Guidelines:
 5. Write numbers as digit symbols, not words. Use 1, 2, 10, 25, 100, 2026, 3.5, 50%, $20, 5K as appropriate. Do not write numbers as Amharic words or English words.
 6. Output strictly valid JSON with no markdown formatting.`;
 
-  const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+  const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
   let lastErr = "";
 
   for (const model of models) {
@@ -629,7 +633,7 @@ Guidelines:
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(300000),
+        signal: AbortSignal.timeout(45000),
       });
 
       if (!response.ok) {
@@ -908,9 +912,12 @@ export async function POST(req: Request) {
     const effectiveDuration = actualServerDurationSec > 0 ? actualServerDurationSec : (durationFromBody > 0 ? durationFromBody : 30);
 
     if (hasabKey) {
+      const hasabBudgetMs = geminiKey
+        ? Math.min(45000, Math.max(20000, Math.round(effectiveDuration * 800)))
+        : 180000;
       try {
-        console.log(`Starting Hasab AI speech transcription for ${filename} (lang: ${hasabLanguage}, requested: ${language})...`);
-        result = await transcribeWithHasab(transcriptionBlob, transcriptionFilename, hasabLanguage);
+        console.log(`Starting Hasab AI speech transcription for ${filename} (lang: ${hasabLanguage}, requested: ${language}, maxWait: ${hasabBudgetMs}ms)...`);
+        result = await transcribeWithHasab(transcriptionBlob, transcriptionFilename, hasabLanguage, hasabBudgetMs);
         engineUsed = "hasab";
       } catch (hasabErr: any) {
         console.warn("Hasab transcription error:", hasabErr?.message);

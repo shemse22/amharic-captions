@@ -1,6 +1,7 @@
 /**
  * Advanced SubStation Alpha (ASS) Subtitle Generator for Amharic / Multilingual Captions
- * Produces deterministic, styled, and animated subtitle files for native FFmpeg burning.
+ * Produces deterministic, styled, and animated subtitle files for native FFmpeg burning
+ * matching the Studio browser preview across all presets and custom styles.
  */
 
 export interface CaptionSegment {
@@ -13,9 +14,10 @@ export interface CaptionStyleOptions {
   presetId?: string;
   presetName?: string;
   fontFamily?: string;
-  fontSize?: number; // CSS reference font size (at ~360px viewport)
+  fontWeight?: string;
+  fontSize?: number; // CSS reference font size (at studio preview scale)
   fontColor?: string; // hex
-  highlightColor?: string; // hex for active word highlight
+  highlightColor?: string; // hex for primary highlight / main box
   secondHighlightColor?: string;
   thirdHighlightColor?: string;
   emphasizedBgColor?: string;
@@ -28,6 +30,8 @@ export interface CaptionStyleOptions {
   displayWordCount?: number;
   breakLines?: boolean;
   hasAnimation?: boolean;
+  hasKeywordHighlights?: boolean;
+  wordAnimation?: string;
   textCase?: 'Aa' | 'AA' | 'aa';
   hasPunctuation?: boolean;
 }
@@ -76,45 +80,36 @@ export function formatAssTime(seconds: number): string {
   return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(cs).padStart(2, '0')}`;
 }
 
-/**
- * Maps stroke weight setting to pixel width scaled to target video resolution
- */
 function getStrokeWidth(weight: 'None' | 'Small' | 'Medium' | 'Large' | number | undefined, scale: number): number {
   if (typeof weight === 'number') return Math.max(0, Math.round(weight * scale));
   switch (weight) {
     case 'Large':
-      return Math.round(3.5 * scale);
+      return Math.max(2, Math.round(2.5 * scale));
     case 'Medium':
-      return Math.round(2.5 * scale);
+      return Math.max(1, Math.round(1.6 * scale));
     case 'Small':
-      return Math.round(1.5 * scale);
+      return Math.max(1, Math.round(1.0 * scale));
     case 'None':
     default:
       return 0;
   }
 }
 
-/**
- * Maps shadow weight setting to pixel depth scaled to target video resolution
- */
 function getShadowDepth(weight: 'None' | 'Small' | 'Medium' | 'Large' | number | undefined, scale: number): number {
   if (typeof weight === 'number') return Math.max(0, Math.round(weight * scale));
   switch (weight) {
     case 'Large':
-      return Math.round(4 * scale);
+      return Math.max(2, Math.round(3.2 * scale));
     case 'Medium':
-      return Math.round(2.5 * scale);
+      return Math.max(1, Math.round(2.0 * scale));
     case 'Small':
-      return Math.round(1.5 * scale);
+      return Math.max(1, Math.round(1.2 * scale));
     case 'None':
     default:
       return 0;
   }
 }
 
-/**
- * Escapes special ASS control characters in subtitle text.
- */
 function escapeAssText(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
@@ -130,14 +125,17 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
 
   const targetW = videoWidth || 1080;
   const targetH = videoHeight || 1920;
-  const isVertical = targetH >= targetW;
+  const isVertical = targetH > targetW;
+  const isSquare = targetH === targetW;
 
-  // The web studio preview displays the video at approximately 320px wide (or 550px high for 9:16).
-  // Scaling relative to height preserves exact relative font size across any video dimensions (720p, 1080p, 4K, 9:16, 16:9).
-  const heightRatio = targetH / (isVertical ? 550 : 360);
+  // Match the Studio preview container dimensions:
+  // Vertical (9:16): 330px x 587px; Square (1:1): 330px x 330px; Landscape (16:9): 520px x 293px.
+  // libass renders Noto Sans Ethiopic slightly taller than CSS em-box, so 0.92 factor gives exact visual parity.
+  const refPreviewH = isVertical ? 587 : isSquare ? 330 : 320;
+  const heightRatio = targetH / refPreviewH;
   const baseFontSize = style.fontSize ?? 28;
-  const scaledFontSize = Math.max(22, Math.round(baseFontSize * heightRatio));
-  const scale = targetW / 360;
+  const scaledFontSize = Math.max(20, Math.round(baseFontSize * heightRatio * 0.92));
+  const scale = targetW / 330;
 
   const rawPreset = `${style.presetId || ''} ${style.presetName || ''}`.toLowerCase();
   const isLaura = rawPreset.includes('laura');
@@ -153,16 +151,25 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
     style.emphasizedBgColor.toLowerCase() !== '#00000000'
   );
 
-  const isBoxMode = isLaura || isAli || hasCustomBg;
-  const borderStyleVal = isBoxMode ? 3 : 1;
-  const boxPadding = Math.round(scale * 7);
+  // Box presets: Laura 2, Ali Abdaal, Custom Background (whole line in box),
+  // Pill presets: Kendrick, Leon (only active word gets solid pill box via Layer 1 PillBox style)
+  const isFullBoxMode = isLaura || isAli || hasCustomBg;
+  const isPillMode = isKendrick || isLeon;
+  const boxPadding = Math.max(4, Math.round(scale * 4.5));
 
-  let strokeWidth = isBoxMode ? boxPadding : getStrokeWidth(style.strokeWeight ?? 'Small', scale);
-  let shadowDepth = isBoxMode ? 0 : getShadowDepth(style.shadowWeight ?? 'Small', scale);
+  // Stroke & shadow for Layer 0 (Outline/Shadow layer)
+  let strokeWidth = isFullBoxMode ? boxPadding : getStrokeWidth(style.strokeWeight ?? 'None', scale);
+  let shadowDepth = isFullBoxMode ? 0 : getShadowDepth(style.shadowWeight ?? 'None', scale);
 
-  if (!isBoxMode && (isMrBeast || isHormozi)) {
-    strokeWidth = Math.max(3, Math.round(3.5 * scale));
-    shadowDepth = Math.max(3, Math.round(3 * scale));
+  if (isMrBeast) {
+    strokeWidth = Math.max(3, Math.round(2.8 * scale));
+    shadowDepth = Math.max(3, Math.round(2.8 * scale));
+  } else if (isHormozi) {
+    strokeWidth = Math.max(2, Math.round(2.3 * scale));
+    shadowDepth = Math.max(2, Math.round(2.3 * scale));
+  } else if (isKendrick && strokeWidth === 0 && shadowDepth === 0) {
+    // Kendrick preview adds `textShadow: '0 1px 3px rgba(0,0,0,0.65)'` when stroke/shadow are None
+    shadowDepth = Math.max(1, Math.round(1.4 * scale));
   }
 
   // Primary text color
@@ -173,19 +180,25 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
     primaryColorAss = hexToAssColor(style.fontColor || '#111827');
   }
 
-  // Outline / Box color
+  // Outline / Box color for Default style
   let outlineColorAss = hexToAssColor(style.strokeColor || '#000000');
   if (isLaura) {
-    outlineColorAss = hexToAssColor(style.highlightColor || '#FFFFFF'); // White background box
+    outlineColorAss = hexToAssColor(style.highlightColor || '#FFFFFF');
   } else if (isAli) {
-    outlineColorAss = hexToAssColor(style.emphasizedBgColor || '#E5E7EB'); // Light Gray box
+    outlineColorAss = hexToAssColor(style.emphasizedBgColor || '#E5E7EB');
   } else if (hasCustomBg) {
     outlineColorAss = hexToAssColor(style.emphasizedBgColor);
   }
 
   const fontFamily = style.fontFamily || 'Noto Sans Ethiopic';
+  const weightRaw = (style.fontWeight || '').toLowerCase();
+  const isBold =
+    weightRaw === 'thin' || weightRaw === 'regular' || weightRaw === 'normal' || weightRaw === 'light'
+      ? 0
+      : -1;
+
   const highlightColorAss = hexToAssColor(style.highlightColor || '#FFDD00');
-  const shadowColorAss = hexToAssColor(style.shadowColor || '#000000', 60);
+  const shadowColorAss = hexToAssColor(style.shadowColor || '#000000', isKendrick ? 90 : 60);
 
   const posX = Math.round(((style.positionX ?? 50) / 100) * targetW);
   const posY = Math.round(((style.positionY ?? 71) / 100) * targetH);
@@ -194,7 +207,10 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
   const breakLines = style.breakLines !== false;
   const hasAnimation = style.hasAnimation !== false;
   const hasPunctuation = style.hasPunctuation !== false;
+  const hasKeywordHighlights = style.hasKeywordHighlights === true;
+  const wordAnimation = style.wordAnimation || 'None';
   const textCase = style.textCase || 'Aa';
+  const defaultBorderStyle = isFullBoxMode ? 3 : 1;
 
   const scriptInfo = [
     '[Script Info]',
@@ -211,7 +227,9 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
   const styles = [
     '[V4+ Styles]',
     'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
-    `Style: Default,${fontFamily},${scaledFontSize},${primaryColorAss},${highlightColorAss},${outlineColorAss},${shadowColorAss},-1,0,0,0,100,100,0,0,${borderStyleVal},${strokeWidth},${shadowDepth},5,20,20,20,1`,
+    `Style: Default,${fontFamily},${scaledFontSize},${primaryColorAss},${highlightColorAss},${outlineColorAss},${shadowColorAss},${isBold},0,0,0,100,100,0,0,${defaultBorderStyle},${strokeWidth},${shadowDepth},5,20,20,20,1`,
+    // Dedicated BorderStyle=3 overlay style for Kendrick / Leon active-word solid pills
+    `Style: PillBox,${fontFamily},${scaledFontSize},${primaryColorAss},${highlightColorAss},&HFF000000,&HFF000000,${isBold},0,0,0,100,100,0,0,3,${boxPadding},0,5,20,20,20,1`,
     '',
   ];
 
@@ -220,6 +238,8 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
     'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
   ];
 
+  const isVerticalStack = baseFontSize > 50;
+
   for (const seg of segments) {
     if (!seg || !seg.text || seg.end <= seg.start) continue;
 
@@ -227,55 +247,176 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
     if (textCase === 'AA') text = text.toUpperCase();
     if (textCase === 'aa') text = text.toLowerCase();
 
-    let allWords = text.replace(/\n/g, ' ').split(/\s+/).filter(Boolean);
-    if (allWords.length === 0) continue;
-
-    // Apply Ethiopian punctuation rules
-    if (hasPunctuation) {
-      const lastIdx = allWords.length - 1;
-      const lastW = allWords[lastIdx];
-      if (!/[።፣፤፥፦፧፨.,!?;:]/.test(lastW)) {
-        const isQuestion = allWords.some((w) =>
-          w.includes('እንዴት') || w.includes('ለምን') || w.includes('መቼ') || w.includes('ስንት') || w.includes('ትፈልጋለህ')
-        );
-        allWords[lastIdx] = lastW + (isQuestion ? '?' : '።');
-      }
-    } else {
-      allWords = allWords.map((w) => w.replace(/[።፣፤፥፦፧፨.,!?;:]/g, ''));
-    }
+    const rawAllWords = text.replace(/\n/g, ' ').split(/\s+/).filter(Boolean);
+    if (rawAllWords.length === 0) continue;
 
     const segStart = seg.start;
     const segEnd = seg.end;
     const segDuration = Math.max(0.1, segEnd - segStart);
 
-    // Chunk into readable subtitle phrases
-    const chunkCount = Math.ceil(allWords.length / maxWords);
+    // Chunk into readable subtitle phrases (matching Studio Preview slice logic)
+    const chunkCount = Math.ceil(rawAllWords.length / maxWords);
     const chunkDuration = segDuration / chunkCount;
 
     for (let cIdx = 0; cIdx < chunkCount; cIdx++) {
-      const chunkWords = allWords.slice(cIdx * maxWords, (cIdx + 1) * maxWords);
+      let chunkWords = rawAllWords.slice(cIdx * maxWords, (cIdx + 1) * maxWords);
       if (chunkWords.length === 0) continue;
+
+      // Apply punctuation rules per chunk matching Studio Preview
+      if (hasPunctuation) {
+        const lastIdx = chunkWords.length - 1;
+        const lastW = chunkWords[lastIdx];
+        if (!/[።፣፤፥፦፧፨.,!?;:]/.test(lastW)) {
+          const isQuestion = chunkWords.some((w) =>
+            w.includes('እንዴት') || w.includes('ለምን') || w.includes('መቼ') || w.includes('ስንት') || w.includes('ትፈልጋለህ')
+          );
+          chunkWords[lastIdx] = lastW + (isQuestion ? '?' : '።');
+        }
+      } else {
+        chunkWords = chunkWords.map((w) => w.replace(/[።፣፤፥፦፧፨.,!?;:]/g, ''));
+      }
 
       const chunkStart = segStart + cIdx * chunkDuration;
       const chunkEnd = Math.min(segEnd, chunkStart + chunkDuration);
       const wordCount = chunkWords.length;
       const wordDuration = Math.max(0.08, (chunkEnd - chunkStart) / wordCount);
 
-      // Break chunk into two lines if enabled and multiple words
-      const formatLines = (activeWordIndex = -1): string => {
-        let lines: string[][];
-        if (breakLines && chunkWords.length > 2) {
-          if (chunkWords.length === 4) {
-            lines = [chunkWords.slice(0, 3), chunkWords.slice(3)];
-          } else if (chunkWords.length === 3) {
-            lines = [chunkWords.slice(0, 2), chunkWords.slice(2)];
-          } else {
-            const half = Math.ceil(chunkWords.length / 2);
-            lines = [chunkWords.slice(0, half), chunkWords.slice(half)];
-          }
-        } else {
-          lines = [chunkWords];
+      // Compute lines matching Studio Preview `previewLines`
+      const getLines = (): string[][] => {
+        if (isVerticalStack && chunkWords.length > 1) {
+          return chunkWords.map((w) => [w]);
         }
+        if (breakLines && chunkWords.length > 1) {
+          if (chunkWords.length === 4) {
+            return [chunkWords.slice(0, 3), chunkWords.slice(3)];
+          }
+          if (chunkWords.length === 3) {
+            return [chunkWords.slice(0, 2), chunkWords.slice(2)];
+          }
+          if (chunkWords.length === 2) {
+            return [[chunkWords[0]], [chunkWords[1]]];
+          }
+          const half = Math.ceil(chunkWords.length / 2);
+          return [chunkWords.slice(0, half), chunkWords.slice(half)];
+        }
+        return [chunkWords];
+      };
+
+      const lines = getLines();
+
+      // Layer 0 formatter (for full-box, outline, keyword-highlight, or inactive base of Pill presets)
+      const formatLayer0 = (activeWordIndex = -1): string => {
+        let globalWordIdx = 0;
+        return lines
+          .map((lineWords) => {
+            const lineStr = lineWords
+              .map((w) => {
+                const escaped = escapeAssText(w);
+                const idx = globalWordIdx;
+                const isCurrentActive = idx === activeWordIndex;
+                const isPast = idx < activeWordIndex;
+                globalWordIdx++;
+
+                // Pill presets (Kendrick / Leon):
+                // On Layer 0, inactive words show crisp normal text + shadow/stroke;
+                // active word is hidden (\alpha&HFF&) so Layer 1 PillBox renders cleanly over it.
+                if (isPillMode) {
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\alpha&HFF&}${escaped}{\\alpha&H00&}`;
+                  }
+                  const normalText = isLeon ? hexToAssColor('#FFFFFF') : hexToAssColor(style.fontColor || '#FFFFFF');
+                  return `{\\1a&H00&\\c${normalText}}${escaped}`;
+                }
+
+                // Laura 2: White rounded background box, active word has neon lime (#DAF434) pill box
+                if (isLaura) {
+                  const whiteBox = hexToAssColor(style.highlightColor || '#FFFFFF');
+                  const limePill = hexToAssColor(style.secondHighlightColor || '#DAF434');
+                  const textColor = hexToAssColor(style.fontColor || '#000000');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\3c${limePill}\\c${textColor}}${escaped}{\\3c${whiteBox}\\c${textColor}}`;
+                  }
+                  return `{\\3c${whiteBox}\\c${textColor}}${escaped}`;
+                }
+
+                // Ali Abdaal: Light gray background box (#E5E7EB), past/active dark gray, upcoming muted gray
+                if (isAli) {
+                  const aliBox = hexToAssColor(style.emphasizedBgColor || '#E5E7EB');
+                  const activeText = hexToAssColor(style.fontColor || '#111827');
+                  const futureText = hexToAssColor('#9CA3AF');
+                  const wordCol = !hasAnimation || isCurrentActive || isPast ? activeText : futureText;
+                  return `{\\3c${aliBox}\\c${wordCol}}${escaped}`;
+                }
+
+                // MrBeast: Yellow / Cyan alternating highlight on active word
+                if (isMrBeast) {
+                  const yellowAss = hexToAssColor(style.highlightColor || '#FFE600');
+                  const cyanAss = hexToAssColor(style.secondHighlightColor || '#00F0FF');
+                  const whiteAss = hexToAssColor('#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    const activeColor = idx % 2 === 0 ? yellowAss : cyanAss;
+                    return `{\\c${activeColor}}${escaped}{\\c${whiteAss}}`;
+                  }
+                  return `{\\c${whiteAss}}${escaped}`;
+                }
+
+                // Alex Hormozi: Primary highlight color on active word
+                if (isHormozi) {
+                  const activeAss = hexToAssColor(style.highlightColor || '#FFFF00');
+                  const whiteAss = hexToAssColor('#FFFFFF');
+                  if (hasAnimation && isCurrentActive) {
+                    return `{\\c${activeAss}}${escaped}{\\c${whiteAss}}`;
+                  }
+                  return `{\\c${whiteAss}}${escaped}`;
+                }
+
+                // Custom Background Box
+                if (hasCustomBg) {
+                  const bgAss = hexToAssColor(style.emphasizedBgColor);
+                  const c1 = hexToAssColor(style.highlightColor || '#FFDD00');
+                  const c2 = hexToAssColor(style.secondHighlightColor || '#00FF66');
+                  const c3 = hexToAssColor(style.thirdHighlightColor || '#FFFFFF');
+                  const normalText = hexToAssColor(style.fontColor || '#FFFFFF');
+                  if (hasKeywordHighlights) {
+                    const cycleColor = idx % 3 === 0 ? c1 : idx % 3 === 1 ? c2 : c3;
+                    return `{\\3c${bgAss}\\c${cycleColor}}${escaped}`;
+                  }
+                  const wordCol = !hasAnimation || isCurrentActive || isPast ? normalText : hexToAssColor(style.fontColor || '#FFFFFF', 140);
+                  return `{\\3c${bgAss}\\c${wordCol}}${escaped}`;
+                }
+
+                // Keyword Highlight presets (Dan, William, Tracy, Kelly, Maya, etc.)
+                if (hasKeywordHighlights) {
+                  const c1 = hexToAssColor(style.highlightColor || '#00FF66');
+                  const c2 = hexToAssColor(style.secondHighlightColor || '#FFFF00');
+                  const c3 = hexToAssColor(style.thirdHighlightColor || '#FFFFFF');
+                  const cycleColor = idx % 3 === 0 ? c1 : idx % 3 === 1 ? c2 : c3;
+                  return `{\\c${cycleColor}}${escaped}`;
+                }
+
+                // Standard Karaoke styling (matches Studio Preview lines 5078-5092)
+                const activeCol = hexToAssColor(style.fontColor || '#FFFFFF');
+                const dimAlpha = wordAnimation === 'opacity 30' ? '&HB2&' : '&H8C&';
+                if (!hasAnimation || isCurrentActive || (wordAnimation !== 'opacity 30' && isPast)) {
+                  return `{\\1a&H00&\\c${activeCol}}${escaped}`;
+                }
+                const mutedCol = (style.fontColor || '#FFFFFF').toLowerCase() === '#000000'
+                  ? hexToAssColor('#9CA3AF')
+                  : activeCol;
+                return `{\\1a${dimAlpha}\\c${mutedCol}}${escaped}{\\1a&H00&}`;
+              })
+              .join(' ');
+            return lineStr;
+          })
+          .join('\\N');
+      };
+
+      // Layer 1 PillBox formatter (ONLY for Kendrick / Leon active word pill)
+      const formatPillLayer = (activeWordIndex: number): string => {
+        const pillColor = isKendrick
+          ? hexToAssColor(style.secondHighlightColor || '#13fd00')
+          : hexToAssColor(style.highlightColor || '#FF5700');
+        const activeText = isKendrick ? hexToAssColor('#000000') : hexToAssColor('#FFFFFF');
 
         let globalWordIdx = 0;
         return lines
@@ -285,88 +426,10 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
                 const escaped = escapeAssText(w);
                 const isCurrentActive = globalWordIdx === activeWordIndex;
                 globalWordIdx++;
-
-                // Laura 2: White rounded background box, active word has neon lime (#DAF434) pill box
-                if (isLaura) {
-                  const whiteBox = hexToAssColor(style.highlightColor || '#FFFFFF');
-                  const limePill = hexToAssColor(style.secondHighlightColor || '#DAF434');
-                  const textColor = hexToAssColor(style.fontColor || '#000000');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\3c${limePill}\\c${textColor}}${escaped}`;
-                  }
-                  return `{\\3c${whiteBox}\\c${textColor}}${escaped}`;
+                if (isCurrentActive) {
+                  return `{\\alpha&H00&\\3a&H00&\\3c${pillColor}\\c${activeText}}${escaped}{\\alpha&HFF&\\3a&HFF&\\3c&HFF000000&}`;
                 }
-
-                // Kendrick: Active word has lime green pill (#13fd00) with black text
-                if (isKendrick) {
-                  const limePill = hexToAssColor(style.secondHighlightColor || '#13fd00');
-                  const activeText = hexToAssColor('#000000');
-                  const normalText = hexToAssColor(style.fontColor || '#FFFFFF');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\3c${limePill}\\c${activeText}}${escaped}`;
-                  }
-                  return `{\\3c&HFF000000&\\c${normalText}}${escaped}`;
-                }
-
-                // Leon: Active word has solid orange (#FF5700) pill with white text
-                if (isLeon) {
-                  const orangePill = hexToAssColor(style.highlightColor || '#FF5700');
-                  const whiteText = hexToAssColor('#FFFFFF');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\3c${orangePill}\\c${whiteText}}${escaped}`;
-                  }
-                  return `{\\3c&HFF000000&\\c${whiteText}}${escaped}`;
-                }
-
-                // Ali Abdaal: Light gray background box (#E5E7EB), dark gray text
-                if (isAli) {
-                  const aliBox = hexToAssColor(style.emphasizedBgColor || '#E5E7EB');
-                  const activeText = hexToAssColor(style.fontColor || '#111827');
-                  const normalText = hexToAssColor('#9CA3AF');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\3c${aliBox}\\c${activeText}}${escaped}`;
-                  }
-                  return `{\\3c${aliBox}\\c${normalText}}${escaped}`;
-                }
-
-                // MrBeast: Electric yellow / cyan alternating highlights
-                if (isMrBeast) {
-                  const yellowAss = hexToAssColor(style.highlightColor || '#FFE600');
-                  const cyanAss = hexToAssColor(style.secondHighlightColor || '#00F0FF');
-                  const whiteAss = hexToAssColor(style.fontColor || '#FFFFFF');
-                  if (hasAnimation && isCurrentActive) {
-                    const activeColor = (globalWordIdx - 1) % 2 === 0 ? yellowAss : cyanAss;
-                    return `{\\c${activeColor}}${escaped}{\\c${whiteAss}}`;
-                  }
-                  return escaped;
-                }
-
-                // Alex Hormozi: Electric yellow (#FFFF00) highlight
-                if (isHormozi) {
-                  const yellowAss = hexToAssColor(style.highlightColor || '#FFFF00');
-                  const whiteAss = hexToAssColor(style.fontColor || '#FFFFFF');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\c${yellowAss}}${escaped}{\\c${whiteAss}}`;
-                  }
-                  return escaped;
-                }
-
-                // Custom Background Box
-                if (hasCustomBg) {
-                  const bgAss = hexToAssColor(style.emphasizedBgColor);
-                  const activeText = hexToAssColor(style.highlightColor || '#FFDD00');
-                  const normalText = hexToAssColor(style.fontColor || '#FFFFFF');
-                  if (hasAnimation && isCurrentActive) {
-                    return `{\\3c${bgAss}\\c${activeText}}${escaped}`;
-                  }
-                  return `{\\3c${bgAss}\\c${normalText}}${escaped}`;
-                }
-
-                // Default standard outline + shadow with active word highlight
-                if (hasAnimation && isCurrentActive) {
-                  return `{\\c${highlightColorAss}}${escaped}{\\c${primaryColorAss}}`;
-                }
-                return escaped;
+                return `{\\alpha&HFF&\\3a&HFF&\\3c&HFF000000&}${escaped}`;
               })
               .join(' ');
             return lineStr;
@@ -375,19 +438,28 @@ export function generateAssSubtitles(options: GenerateAssOptions): string {
       };
 
       if (hasAnimation && wordCount > 1) {
-        // Emit timed sub-interval events for each active word highlight
         for (let wIdx = 0; wIdx < wordCount; wIdx++) {
           const wStart = chunkStart + wIdx * wordDuration;
           const wEnd = Math.min(chunkEnd, wStart + wordDuration);
-          const lineText = formatLines(wIdx);
           events.push(
-            `Dialogue: 0,${formatAssTime(wStart)},${formatAssTime(wEnd)},Default,,0,0,0,,{\\an5\\pos(${posX},${posY})}${lineText}`
+            `Dialogue: 0,${formatAssTime(wStart)},${formatAssTime(wEnd)},Default,,0,0,0,,{\\an5\\pos(${posX},${posY})}${formatLayer0(wIdx)}`
           );
+          if (isPillMode) {
+            events.push(
+              `Dialogue: 1,${formatAssTime(wStart)},${formatAssTime(wEnd)},PillBox,,0,0,0,,{\\an5\\pos(${posX},${posY})}${formatPillLayer(wIdx)}`
+            );
+          }
         }
-      } else {
-        const lineText = formatLines(-1);
+      } else if (hasAnimation && wordCount === 1 && isPillMode) {
         events.push(
-          `Dialogue: 0,${formatAssTime(chunkStart)},${formatAssTime(chunkEnd)},Default,,0,0,0,,{\\an5\\pos(${posX},${posY})}${lineText}`
+          `Dialogue: 0,${formatAssTime(chunkStart)},${formatAssTime(chunkEnd)},Default,,0,0,0,,{\\an5\\pos(${posX},${posY})}${formatLayer0(0)}`
+        );
+        events.push(
+          `Dialogue: 1,${formatAssTime(chunkStart)},${formatAssTime(chunkEnd)},PillBox,,0,0,0,,{\\an5\\pos(${posX},${posY})}${formatPillLayer(0)}`
+        );
+      } else {
+        events.push(
+          `Dialogue: 0,${formatAssTime(chunkStart)},${formatAssTime(chunkEnd)},Default,,0,0,0,,{\\an5\\pos(${posX},${posY})}${formatLayer0(-1)}`
         );
       }
     }

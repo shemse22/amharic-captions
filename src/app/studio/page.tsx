@@ -2348,6 +2348,7 @@ export default function StudioPage() {
         presetId: selectedPresetId,
         presetName: customPresetName,
         fontFamily,
+        fontWeight,
         fontSize,
         fontColor,
         highlightColor: mainHighlightColor,
@@ -2363,6 +2364,8 @@ export default function StudioPage() {
         displayWordCount,
         breakLines,
         hasAnimation,
+        hasKeywordHighlights,
+        wordAnimation,
         textCase,
         hasPunctuation,
       }));

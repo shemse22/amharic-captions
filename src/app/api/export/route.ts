@@ -207,30 +207,37 @@ function parseFps(value?: string): number {
 function resolveFontForExport(
   requestedFamily: string | undefined,
   fontsDir: string,
+  presetHint?: string,
 ): { fontFile: string; assFamily: string } {
   const DEFAULT_FILE = 'NotoSansEthiopic-Regular.ttf';
   const DEFAULT_FAMILY = 'Noto Sans Ethiopic';
 
-  // Mapping from UI/CSS font family name  →  { file in public/fonts/, ASS family name }
-  // ASS family names were verified by opening each TTF in a font viewer.
+  // Mapping from UI/CSS font family name → { file in public/fonts/, embedded TTF ASS family name }
   const FONT_MAP: Record<string, { file: string; family: string }> = {
     'Noto Sans Ethiopic':          { file: 'NotoSansEthiopic-Regular.ttf', family: 'Noto Sans Ethiopic' },
     'NotoSansEthiopic':            { file: 'NotoSansEthiopic-Regular.ttf', family: 'Noto Sans Ethiopic' },
-    'Noto Sans':                   { file: 'NotoSans-Regular.ttf',         family: 'Noto Sans' },
     'SurGraphics Black':           { file: 'surgraphics-black.ttf',        family: 'SurGraphics Black' },
     'surgraphics-black':           { file: 'surgraphics-black.ttf',        family: 'SurGraphics Black' },
     'Zemenay':                     { file: 'zemenay.ttf',                  family: 'Zemenay' },
     'Bela Bereka':                 { file: 'bela-bereka.ttf',              family: 'Bela Bereka' },
-    'Loga Display':                { file: 'loga-display.ttf',             family: 'Loga Display' },
+    'Loga Display':                { file: 'loga-display.ttf',             family: 'Loga Display Med' },
     'Geez Digital':                { file: 'geez-digital.ttf',             family: 'Geez Digital' },
-    'Waldba Wookianos':            { file: 'waldba-wookianos.ttf',         family: 'Waldba Wookianos' },
+    'Waldba Wookianos':            { file: 'waldba-wookianos.ttf',         family: 'ዋልድባ - ውቂያኖስ' },
     'Abyssinica SIL Connected':    { file: 'abyssinica-sil-connected.ttf', family: 'Abyssinica SIL Connected' },
     'Ethiopic Lessan':             { file: 'ethiopic-lessan.ttf',          family: 'Ethiopic Lessan' },
-    'Amhara Reduced':              { file: 'amhara-reduced.otf',           family: 'Amhara Reduced' },
     'HH Lemd Mono':                { file: 'hh-lemd-mono.otf',             family: 'HH Lemd Mono' },
   };
 
-  const key = (requestedFamily || '').trim();
+  let key = (requestedFamily || '').trim();
+  const hint = (presetHint || '').toLowerCase();
+
+  // Match Studio Preview's preset CSS font overrides for Ethiopic characters
+  if (hint.includes('kelly') && (!FONT_MAP[key] || key === 'Arial-Pro')) {
+    key = 'Waldba Wookianos';
+  } else if ((hint.includes('hormozi') || hint.includes('beast')) && (!FONT_MAP[key] || key === 'Montserrat')) {
+    key = 'SurGraphics Black';
+  }
+
   const entry = FONT_MAP[key];
 
   if (entry) {
@@ -241,10 +248,9 @@ function resolveFontForExport(
     }
     console.warn(`[export] Font file missing for "${key}": ${fullPath} — falling back to Noto Sans Ethiopic`);
   } else {
-    console.warn(`[export] Unknown font family "${key}" — falling back to Noto Sans Ethiopic`);
+    console.log(`[export] Font "${key}" using bundled Noto Sans Ethiopic fallback`);
   }
 
-  // Always fall back to Noto Sans Ethiopic which is guaranteed to be present
   const fallbackPath = path.join(fontsDir, DEFAULT_FILE);
   if (!fs.existsSync(fallbackPath)) {
     throw new Error(`Default fallback font not found: ${fallbackPath}. Ensure NotoSansEthiopic-Regular.ttf is in public/fonts/.`);
@@ -615,7 +621,11 @@ export async function POST(req: NextRequest) {
     // This is critical: FFmpeg libass looks up fonts by family name inside the fontsdir.
     // If the requested font (e.g. "Montserrat") is not in fontsdir, libass silently renders
     // no captions. We always fall back to Noto Sans Ethiopic which is guaranteed to exist.
-    const { assFamily: resolvedFontFamily } = resolveFontForExport(captionStyle.fontFamily, fontsDir);
+    const { assFamily: resolvedFontFamily } = resolveFontForExport(
+      captionStyle.fontFamily,
+      fontsDir,
+      `${captionStyle.presetId || ''} ${captionStyle.presetName || ''}`
+    );
     console.log(`[export] segments: ${segments.length}, font: "${captionStyle.fontFamily}" → ASS: "${resolvedFontFamily}"`);
 
     const updateAssFile = async (w: number, h: number) => {
